@@ -4,7 +4,8 @@
 Plugin Name:  MAAA Tables
 Plugin URI:   http://meggangreen.com
 Description:  update maaa tables
-Version:      1.0
+Version:      1.1
+Updated:      2018-01-22
 Author:       Meggan Green
 Author URI:   http://meggangreen.com
 License:      GNU GPL2
@@ -35,10 +36,10 @@ function maaa_calc_stat_vals($maaa_funcamt, $maaa_funcdiv) {
   $amtDRs = sprintf("%02d", number_format($amtDR));
 
   $maaa_stat_vals = array($amtDLs, $amtDRs);
-    //$maaa_stat_vals = '<td width="15%" style="text-align:right">$' . $amtDLs . '</td><td width="15%" style="text-align:left">.' . $amtDRs . '</td>';
 
   return $maaa_stat_vals;
 }
+
 
 //Make option tags for lists
 function maaa_list_options($maaa_listtable, $maaa_listcol, $maaa_listsel) {
@@ -53,6 +54,7 @@ function maaa_list_options($maaa_listtable, $maaa_listcol, $maaa_listsel) {
   } //end for
   return $maaa_liststr;
 } //end function
+
 
 //Make table entry input form
 function maaa_dataform($maaa_tablechoice, $maaa_valsarray, $maaa_valscount) {
@@ -267,7 +269,7 @@ function maaa_forms_widget() {
     $maaa_tchoice = $_POST['val_edittable'];
   } else if (isset($_POST['submit_tupdate']) || isset($_POST['delete_tupdate'])) {
     $maaa_tchoice = $_POST['val_tchoice'];
-  }
+  } // end if
 
   //Choose table info to display
   switch ($maaa_tchoice) {
@@ -570,7 +572,7 @@ function maaa_sidebar_widget_init() {
     ?>
     <form method="post" action="">
     <?php wp_nonce_field('maaa_choosecountry_nonce'); ?>
-    <select name="val_cchoice" class="postform"><?php echo $maaa_countrystr; ?></select>&nbsp;<input type="submit" value="Show" name="submit_country" class="postform">
+    <select name="val_cchoice" class="postform"><?php echo esc_html( $maaa_countrystr ); ?></select>&nbsp;<input type="submit" value="Show" name="submit_country" class="postform">
     </form>
     <hr>
     <table width="100%">
@@ -581,35 +583,35 @@ function maaa_sidebar_widget_init() {
               <th width="100%"><b>Total Time</b></td>
             </tr>
             <tr>
-              <td width="100%"><?php echo $maaa_daytotal; ?></td>
+              <td width="100%"><?php echo esc_html( $maaa_daytotal ); ?></td>
             </tr>
             <tr style="height:15px"></tr>
             <tr>
               <th width="100%"><b>First Entry</b></td>
             </tr>
             <tr>
-              <td width="100%"><?php echo $maaa_day1; ?></td>
+              <td width="100%"><?php echo esc_html( $maaa_day1 ); ?></td>
             </tr>
             <tr style="height:15px"></tr>
             <tr>
               <th width="100%"><b>Last Exit</b></td>
             </tr>
             <tr>
-              <td width="100%"><?php echo $maaa_day2; ?></td>
+              <td width="100%"><?php echo esc_html( $maaa_day2 ); ?></td>
             </tr>
             <tr style="height:15px"></tr>
             <tr>
               <th width="100%"><b>USD$1 Equals</b></td>
             </tr>
             <tr>
-              <td width="100%"><?php echo $maaa_currency; ?></td>
+              <td width="100%"><?php echo esc_html( $maaa_currency ); ?></td>
             </tr>
           </table>
         </td>
         <td width="75%" style="border-left: double #1188ee">
           <table id="statsfin" style="padding-left: 35px">
             <tr>
-              <th width="40%"><b><?php echo $maaa_cchoice; ?></b></td>
+              <th width="40%"><b><?php echo esc_html( $maaa_cchoice ); ?></b></td>
               <th width="30%" colspan="2" style="text-align:center"><b>Total USD$</b></td>
               <th width="30%" colspan="2" style="text-align:center"><b>Avg / Day</b></td>
             </tr>
@@ -619,8 +621,6 @@ function maaa_sidebar_widget_init() {
               <td width="15%" style="text-align:left">.<?php echo esc_html( maaa_calc_stat_vals( $maaa_cattotal, 1 )[1] ); ?></td>
               <td width="15%" style="text-align:right">$<?php echo esc_html( maaa_calc_stat_vals( $maaa_cattotal, $maaa_daysum )[0] ); ?></td>
               <td width="15%" style="text-align:left">.<?php echo esc_html( maaa_calc_stat_vals( $maaa_cattotal, $maaa_daysum )[1] ); ?></td>
-              <?php // echo maaa_calc_stat_vals( $maaa_cattotal,1 ); // td 10%R 20%L code for total ?>
-              <?php // echo maaa_calc_stat_vals( $maaa_cattotal,$maaa_daysum ); // td 10%R 20%L code for per diem ?>
             </tr>
             <?php
             foreach ($maaa_catfins as $maaa_catfin) {
@@ -634,8 +634,6 @@ function maaa_sidebar_widget_init() {
                   <td width="15%" style="text-align:left">.<?php echo esc_html( maaa_calc_stat_vals( $maaa_catfin_f, 1 )[1] ); ?></td>
                   <td width="15%" style="text-align:right">$<?php echo esc_html( maaa_calc_stat_vals( $maaa_catfin_f, $maaa_daysum )[0] ); ?></td>
                   <td width="15%" style="text-align:left">.<?php echo esc_html( maaa_calc_stat_vals( $maaa_catfin_f, $maaa_daysum )[1] ); ?></td>
-                  <?php // echo maaa_calc_stat_vals( $maaa_catfin_f,1 ); // td 10%R 20%L code for total ?>
-                  <?php // echo maaa_calc_stat_vals( $maaa_catfin_f,$maaa_daysum ); // td 10%R 20%L code for per diem ?>
                 </tr>
               <?php } //end if
             } //end foreach
