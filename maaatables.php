@@ -572,7 +572,8 @@ function maaa_sidebar_widget_init() {
     ?>
     <form method="post" action="">
     <?php wp_nonce_field('maaa_choosecountry_nonce'); ?>
-    <select name="val_cchoice" class="postform"><?php echo esc_html( $maaa_countrystr ); ?></select>&nbsp;<input type="submit" value="Show" name="submit_country" class="postform">
+    <select name="val_cchoice" class="postform"><?php echo $maaa_countrystr; ?></select>
+    <input type="submit" value="Show" name="submit_country" class="postform">
     </form>
     <hr>
     <table width="100%">
