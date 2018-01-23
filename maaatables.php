@@ -545,10 +545,12 @@ function maaa_display_forms_widget() {
 
 } //end function
 
+
 // Create the widget action hook function which activates the admin dashboard widget
 function maaa_add_table_widgets() {
   wp_add_dashboard_widget('maaa_admin_widget', 'MAAA Tables', 'maaa_display_forms_widget');
 }
+
 
 // Hook into the 'wp_dashboard_setup' action to register our other functions
 add_action('wp_dashboard_setup', 'maaa_add_table_widgets');
@@ -586,7 +588,7 @@ function maaa_sidebar_widget_init() {
       $maaa_catfins = $maaa_catfins . $maaa_value . "%" . $maaa_catsum . ",,";
       $maaa_cattotal = $maaa_cattotal + $maaa_catsum;
     } //end for
-    $maaa_catfins = explode(",,",$maaa_catfins);
+    $maaa_catfins = explode(",,", $maaa_catfins);
 
     //Retrieve number of days
     $maaa_table = $wpdb->prefix . "maaa_days";
@@ -725,6 +727,7 @@ function maaa_sidebar_widget_init() {
   wp_register_sidebar_widget('maaa_allstats','Stats - All', 'maaa_allstats');
 
 } //end function
+
 
 // Hook into the 'plugins_loaded' action
 add_action('plugins_loaded', 'maaa_sidebar_widget_init');
