@@ -196,7 +196,7 @@ function maaa_make_dataform_safe($maaa_tablechoice, $maaa_valsarray, $maaa_valsc
 
 
 //Make data table
-function maaa_datatable($maaa_tablechoice, $maaa_tablefields) {
+function maaa_make_output_table_safe($maaa_tablechoice, $maaa_tablefields) {
   global $wpdb;
   $maaa_tablepath = $wpdb->prefix . "maaa_" . $maaa_tablechoice;
   $i = count($maaa_tablefields) - 1;
@@ -230,28 +230,48 @@ function maaa_datatable($maaa_tablechoice, $maaa_tablefields) {
   if ($maaa_tabledata) {
     foreach ($maaa_tabledata as $maaa_tabledata_row) {
       foreach ($maaa_tabledata_row as $maaa_tabledata_field) {
-        if ($maaa_tabledata_str) {
-          $maaa_tabledata_str = $maaa_tabledata_str . '<td style="vertical-align:top; width="' . $maaa_tpct . '%"><center>' . $maaa_tabledata_field . '</center></td>';
+        if ($maaa_tabledata_str_safe) {
+          $maaa_tabledata_str_safe = $maaa_tabledata_str_safe .
+                                     '<td style="vertical-align:top; width="' .
+                                     esc_attr( $maaa_tpct ) .
+                                     '%"><center>' .
+                                     esc_html( $maaa_tabledata_field ) .
+                                     '</center></td>';
         } else {
-          $maaa_tabledata_str = '<td style="vertical-align:top; width="2%"><center><input type="submit" name="id_' . $maaa_tabledata_field . '" value="' . $maaa_tabledata_field . '"></center></td>';
+          $maaa_tabledata_str_safe = '<td style="vertical-align:top; width="2%"><center><input type="submit" name="id_' .
+                                     esc_attr( $maaa_tabledata_field ) .
+                                     '" value="' .
+                                     esc_attr( $maaa_tabledata_field ) .
+                                     '"></center></td>';
         } //end if
       } //end foreach
-      $maaa_tablerow_str = $maaa_tablerow_str . '<tr style="border-bottom:1px dotted #999;">' . $maaa_tabledata_str . '</tr>';
-      unset($maaa_tabledata_str);
+      $maaa_tablerow_str_safe = $maaa_tablerow_str_safe .
+                                '<tr style="border-bottom:1px dotted #999;">' .
+                                $maaa_tabledata_str_safe .
+                                '</tr>';
+      unset($maaa_tabledata_str_safe);
     } //end foreach
     foreach ($maaa_tablefields as $maaa_tablehead) {
-      if ($maaa_tablehead_str) {
-        $maaa_tablehead_str = $maaa_tablehead_str . '<th width="' . $maaa_tpct . '%">' . strtoupper($maaa_tablehead) . '</th>';
+      if ($maaa_tablehead_str_safe) {
+        $maaa_tablehead_str_safe = $maaa_tablehead_str_safe .
+                                   '<th width="' .
+                                   esc_attr( $maaa_tpct ) .
+                                   '%">' .
+                                   esc_html( strtoupper($maaa_tablehead) ) .
+                                   '</th>';
       } else {
-        $maaa_tablehead_str = $maaa_tablehead_str . '<th width="2%">' . strtoupper($maaa_tablehead) . '</th>';
+        $maaa_tablehead_str_safe = $maaa_tablehead_str_safe .
+                                   '<th width="2%">' .
+                                   esc_html( strtoupper($maaa_tablehead) ) .
+                                   '</th>';
       } //endif
-    } //end for
-    //$maaa_tabledata_table =
-    return '<hr><center><b>' . $maaa_tabletitle . '</b></center>
+    } //end foreach
+
+    return '<hr><center><b>' . esc_html( $maaa_tabletitle ) . '</b></center>
       <table width="100%" style="border-collapse:collapse;">
-        <form method="post" action="" name="ids">' . wp_nonce_field('maaa_editid_nonce') . '<input type="hidden" name="val_edittable" value="' . $maaa_tablechoice . '">
-        <tr>' . $maaa_tablehead_str . '</tr>
-        ' . $maaa_tablerow_str . '
+        <form method="post" action="" name="ids">' . wp_nonce_field('maaa_editid_nonce') . '<input type="hidden" name="val_edittable" value="' . esc_attr( $maaa_tablechoice ) . '">
+        <tr>' . $maaa_tablehead_str_safe . '</tr>
+        ' . $maaa_tablerow_str_safe . '
         </form>
       </table>';
   } //end if
@@ -368,7 +388,7 @@ function maaa_forms_widget() {
           </tr>
           <tr>
           <td colspan="2">
-            ' . maaa_datatable($maaa_tchoice, $maaa_data[1]) . '
+            ' . maaa_make_output_table_safe($maaa_tchoice, $maaa_data[1]) . '
           </td>
           </tr>
           </table>';
@@ -388,7 +408,7 @@ function maaa_forms_widget() {
           </tr>
           <tr>
           <td colspan="2">
-            ' . maaa_datatable($maaa_tchoice, $maaa_data[1]) . '
+            ' . maaa_make_output_table_safe($maaa_tchoice, $maaa_data[1]) . '
           </td>
           </tr>
           </table>';
@@ -494,7 +514,7 @@ function maaa_forms_widget() {
         </tr>
         <tr>
           <td colspan="2">
-            ' . maaa_datatable($maaa_tchoice, $maaa_data[1]) . '
+            ' . maaa_make_output_table_safe($maaa_tchoice, $maaa_data[1]) . '
           </td>
         </tr>
       </table>';
