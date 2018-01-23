@@ -109,25 +109,25 @@ function maaa_make_dataform_safe($maaa_tablechoice, $maaa_valsarray, $maaa_valsc
         $maaa_radio = 'Type:<br><input type="radio" name="val_type" value="bud">Budgeted&nbsp;&nbsp;<input type="radio" name="val_type" value="act" checked>Actual<br>';
       } //end if
       $maaa_dataform_safe = '<form method="post" action="" name="f_budget">' . wp_nonce_field('maaa_budget_nonce') . '
-        <input type="hidden" name="val_tchoice" value="' . $maaa_tablechoice . '">
-        <input type="hidden" name="val_idedit" value="' . $maaa_valsarray[0] . '">
+        <input type="hidden" name="val_tchoice" value="' . esc_attr( $maaa_tablechoice ) . '">
+        <input type="hidden" name="val_idedit" value="' . esc_attr( $maaa_valsarray[0] ) . '">
         ' . $maaa_radio . '
-        Description:<br><input type="text" name="val_descrip" value="' . $maaa_valsarray[2] . '"><br>
-        Price:<br><input type="text" name="val_price" value="' . $maaa_valsarray[3] . '"><br>
-        Detail:<br><input type="text" name="val_detail" value="' . $maaa_valsarray[4] . '"><br>
+        Description:<br><input type="text" name="val_descrip" value="' . esc_attr( $maaa_valsarray[2] ) . '"><br>
+        Price:<br><input type="text" name="val_price" value="' . esc_attr( $maaa_valsarray[3] ) . '"><br>
+        Detail:<br><input type="text" name="val_detail" value="' . esc_attr( $maaa_valsarray[4] ) . '"><br>
         <input type="submit" value="Submit" name="submit_tupdate"> &nbsp; &nbsp; &nbsp;
-        <input type="submit" value="Delete" name="delete_tupdate" ' . $maaa_delete . '></form>';
+        <input type="submit" value="Delete" name="delete_tupdate" ' . esc_attr( $maaa_delete ) . '></form>';
       $maaa_dfields = array("id", "type", "descrip", "price", "detail");
       $maaa_tfields = "type, descrip, price, detail";
       $maaa_tftypes = "%s, %s, %f, %s";
       break;
     case "categories":
       $maaa_dataform_safe = '<form method="post" action="" name="f_categories">' . wp_nonce_field('maaa_categories_nonce') . '
-        <input type="hidden" name="val_tchoice" value="' . $maaa_tablechoice . '">
-        <input type="hidden" name="val_idedit" value="' . $maaa_valsarray[0] . '">
-        Category:<br><input type="text" name="val_cat" value="' . $maaa_valsarray[1] . '"><br>
+        <input type="hidden" name="val_tchoice" value="' . esc_attr( $maaa_tablechoice ) . '">
+        <input type="hidden" name="val_idedit" value="' . esc_attr( $maaa_valsarray[0] ) . '">
+        Category:<br><input type="text" name="val_cat" value="' . esc_attr( $maaa_valsarray[1] ) . '"><br>
         <input type="submit" value="Submit" name="submit_tupdate"> &nbsp; &nbsp; &nbsp;
-        <input type="submit" value="Delete" name="delete_tupdate" ' . $maaa_delete . '>
+        <input type="submit" value="Delete" name="delete_tupdate" ' . esc_attr( $maaa_delete ) . '>
         </form>';
       $maaa_dfields = array("id", "category");
       $maaa_tfields = "category";
@@ -135,53 +135,53 @@ function maaa_make_dataform_safe($maaa_tablechoice, $maaa_valsarray, $maaa_valsc
       break;
     case "countries":
       $maaa_dataform_safe = '<form method="post" action="" name="f_countries">' . wp_nonce_field('maaa_countries_nonce') . '
-        <input type="hidden" name="val_tchoice" value="' . $maaa_tablechoice . '">
-        <input type="hidden" name="val_idedit" value="' . $maaa_valsarray[0] . '">
-        Country:<br><input type="text" name="val_country" value="' . $maaa_valsarray[1] . '"><br>
-        Visa Entry Fee:<br><input type="text" name="val_visaentry" value="' . $maaa_valsarray[2] . '"><br>
-        Visa Exit Fee:<br><input type="text" name="val_visaexit" value="' . $maaa_valsarray[3] . '"><br>
-        Visa Notes:<br><input type="text" name="val_visanotes" value="' . $maaa_valsarray[4] . '"><br>
-        Visit Order:<br><input type="text" name="val_visitorder" value="' . $maaa_valsarray[5] . '"><br>
-        Approximate Duration:<br><input type="text" name="val_duration" value="' . $maaa_valsarray[6] . '"><br>
-        USD$1 Equals:<br><input type="text" name="val_currconvert" value="' . $maaa_valsarray[7] . '"><br>
-        Foreign Amount Spent:<br><input type="text" name="val_currforeign" value="' . $maaa_valsarray[8] . '"><br>
-        Map URL:<br>' .  $maaa_valsarray[9] .'<br>Use PHP MyAdmin to update the Map URL.<br>
+        <input type="hidden" name="val_tchoice" value="' . esc_attr( $maaa_tablechoice ) . '">
+        <input type="hidden" name="val_idedit" value="' . esc_attr( $maaa_valsarray[0] ) . '">
+        Country:<br><input type="text" name="val_country" value="' . esc_attr( $maaa_valsarray[1] ) . '"><br>
+        Visa Entry Fee:<br><input type="text" name="val_visaentry" value="' . esc_attr( $maaa_valsarray[2] ) . '"><br>
+        Visa Exit Fee:<br><input type="text" name="val_visaexit" value="' . esc_attr( $maaa_valsarray[3] ) . '"><br>
+        Visa Notes:<br><input type="text" name="val_visanotes" value="' . esc_attr( $maaa_valsarray[4] ) . '"><br>
+        Visit Order:<br><input type="text" name="val_visitorder" value="' . esc_attr( $maaa_valsarray[5] ) . '"><br>
+        Approximate Duration:<br><input type="text" name="val_duration" value="' . esc_attr( $maaa_valsarray[6] ) . '"><br>
+        USD$1 Equals:<br><input type="text" name="val_currconvert" value="' . esc_attr( $maaa_valsarray[7] ) . '"><br>
+        Foreign Amount Spent:<br><input type="text" name="val_currforeign" value="' . esc_attr( $maaa_valsarray[8] ) . '"><br>
+        Map URL:<br>' .  esc_url( $maaa_valsarray[9] ) .'<br>Use PHP MyAdmin to update the Map URL.<br>
         <input type="submit" value="Submit" name="submit_tupdate"> &nbsp; &nbsp; &nbsp;
-        <input type="submit" value="Delete" name="delete_tupdate" ' . $maaa_delete . '>
+        <input type="submit" value="Delete" name="delete_tupdate" ' . esc_attr( $maaa_delete ) . '>
         </form>';
       $maaa_dfields = array("id", "country", "visa_entry", "visa_exit", "visit_order", "approx_duration", "map_url");
       $maaa_tfields = "country, visa_entry, visa_exit, visa_notes, visit_order, approx_duration, curr_convert, curr_foreign";
       $maaa_tftypes = "%s, %f, %f, %s, %d, %d, %f, %f";
       break;
     case "days":
-      $maaa_countrystr = maaa_make_dropdown_safe("countries", "country", $maaa_valsarray[1]);
+      // $maaa_countrystr = maaa_make_dropdown_safe("countries", "country", $maaa_valsarray[1]);
       $maaa_dataform_safe = '<form method="post" action="" name="f_days">' . wp_nonce_field('maaa_days_nonce') . '
-        <input type="hidden" name="val_tchoice" value="' . $maaa_tablechoice . '">
-        <input type="hidden" name="val_idedit" value="' . $maaa_valsarray[0] . '">
-        Country:<br><select name="val_country">' . $maaa_countrystr . '</select><br>
-        Entry Timestamp:<br><small>yyyy-mm-dd hh:mm:ss</small><br><input type="text" name="val_entry" value="' . $maaa_valsarray[2] . '"><br>
-        Exit Timestamp:<br><small>yyyy-mm-dd hh:mm:ss</small><br><input type="text" name="val_exit" value="' . $maaa_valsarray[3] . '"><br>
+        <input type="hidden" name="val_tchoice" value="' . esc_attr( $maaa_tablechoice ) . '">
+        <input type="hidden" name="val_idedit" value="' . esc_attr( $maaa_valsarray[0] ) . '">
+        Country:<br><select name="val_country">' . maaa_make_dropdown_safe("countries", "country", $maaa_valsarray[1]) . '</select><br>
+        Entry Timestamp:<br><small>yyyy-mm-dd hh:mm:ss</small><br><input type="text" name="val_entry" value="' . esc_attr( $maaa_valsarray[2] ) . '"><br>
+        Exit Timestamp:<br><small>yyyy-mm-dd hh:mm:ss</small><br><input type="text" name="val_exit" value="' . esc_attr( $maaa_valsarray[3] ) . '"><br>
         <input type="submit" value="Submit" name="submit_tupdate"> &nbsp; &nbsp; &nbsp;
-        <input type="submit" value="Delete" name="delete_tupdate" ' . $maaa_delete . '>
+        <input type="submit" value="Delete" name="delete_tupdate" ' . esc_attr( $maaa_delete ) . '>
         </form>';
       $maaa_dfields = array("id", "country", "entry_ts", "exit_ts", "days");
       $maaa_tfields = "country, entry_ts, exit_ts, days";
       $maaa_tftypes = "%s, %s, %s, %f";
       break;
     case "expenses":
-      $maaa_countrystr = maaa_make_dropdown_safe("countries", "country", $maaa_valsarray[2]);
-      $maaa_categorystr = maaa_make_dropdown_safe("categories", "category", $maaa_valsarray[3]);
+      // $maaa_countrystr = maaa_make_dropdown_safe("countries", "country", $maaa_valsarray[2]);
+      // $maaa_categorystr = maaa_make_dropdown_safe("categories", "category", $maaa_valsarray[3]);
       $maaa_dataform_safe = '<form method="post" action="" name="f_expenses">' . wp_nonce_field('maaa_expenses_nonce') . '
-        <input type="hidden" name="val_tchoice" value="' . $maaa_tablechoice . '">
-        <input type="hidden" name="val_idedit" value="' . $maaa_valsarray[0] . '">
-        Date:<br><small>yyyy-mm-dd</small><br><input type="text" name="val_date" value="' . $maaa_valsarray[1] . '"><br>
-        Country:<br><select name="val_country">' . $maaa_countrystr . '</select><br>
-        Category:<br><select name="val_category">' . $maaa_categorystr . '</select><br>
-        Detail:<br><input type="text" name="val_detail" value="' . $maaa_valsarray[4] . '"><br>
-        Price:<br><input type="text" name="val_price" value="' . $maaa_valsarray[5] . '"><br>
-        Num of Units:<br><input type="text" name="val_units" value="' . $maaa_valsarray[6] . '"><br>
+        <input type="hidden" name="val_tchoice" value="' . esc_attr( $maaa_tablechoice ) . '">
+        <input type="hidden" name="val_idedit" value="' . esc_attr( $maaa_valsarray[0] ) . '">
+        Date:<br><small>yyyy-mm-dd</small><br><input type="text" name="val_date" value="' . esc_attr( $maaa_valsarray[1] ) . '"><br>
+        Country:<br><select name="val_country">' . maaa_make_dropdown_safe("countries", "country", $maaa_valsarray[2]) . '</select><br>
+        Category:<br><select name="val_category">' . maaa_make_dropdown_safe("categories", "category", $maaa_valsarray[3]) . '</select><br>
+        Detail:<br><input type="text" name="val_detail" value="' . esc_attr( $maaa_valsarray[4] ) . '"><br>
+        Price:<br><input type="text" name="val_price" value="' . esc_attr( $maaa_valsarray[5] ) . '"><br>
+        Num of Units:<br><input type="text" name="val_units" value="' . esc_attr( $maaa_valsarray[6] ) . '"><br>
         <input type="submit" value="Submit" name="submit_tupdate"> &nbsp; &nbsp; &nbsp;
-        <input type="submit" value="Delete" name="delete_tupdate" ' . $maaa_delete . '>
+        <input type="submit" value="Delete" name="delete_tupdate" ' . esc_attr( $maaa_delete ) . '>
         </form>';
       $maaa_dfields = array("id", "spenddate", "country", "category", "detail", "price");
       $maaa_tfields = "spenddate, country, category, detail, price, units, ppu";
@@ -193,6 +193,7 @@ function maaa_make_dataform_safe($maaa_tablechoice, $maaa_valsarray, $maaa_valsc
 
   return array($maaa_dataform_safe, $maaa_dfields, $maaa_tfields, $maaa_tftypes);
 } //end function
+
 
 //Make data table
 function maaa_datatable($maaa_tablechoice, $maaa_tablefields) {
