@@ -35,9 +35,7 @@ function maaa_calc_stat_vals($maaa_funcamt, $maaa_funcdiv) {
   $amtDLs = number_format($amtDL);
   $amtDRs = sprintf("%02d", number_format($amtDR));
 
-  $maaa_stat_vals = array($amtDLs, $amtDRs);
-
-  return $maaa_stat_vals;
+  return array($amtDLs, $amtDRs);
 }
 
 
@@ -47,21 +45,31 @@ function maaa_list_options($maaa_listtable, $maaa_listcol, $maaa_listsel) {
   $maaa_listarr = $wpdb->get_col( "SELECT " . $maaa_listcol . " FROM " . $wpdb->prefix . "maaa_" . $maaa_listtable . " ORDER BY " . $maaa_listcol . " ASC" );
   foreach ($maaa_listarr as $maaa_listopt) {
     if ($maaa_listopt == $maaa_listsel) {
-      $maaa_liststr = $maaa_liststr . '<option selected value="' . $maaa_listopt . '">' . $maaa_listopt . '</option>';
+      $maaa_liststr_safe = $maaa_liststr_safe .
+                           '<option selected value="' .
+                           esc_attr( $maaa_listopt ) .
+                           '">' .
+                           esc_html( $maaa_listopt ) .
+                           '</option>';
     } else {
-      $maaa_liststr = $maaa_liststr . '<option value="' . $maaa_listopt . '">' . $maaa_listopt . '</option>';
+      $maaa_liststr_safe = $maaa_liststr_safe .
+                           '<option value="' .
+                           esc_attr( $maaa_listopt ) .
+                           '">' .
+                           esc_html( $maaa_listopt ) .
+                           '</option>';
     } //end if
   } //end for
-  return $maaa_liststr;
+  return $maaa_liststr_safe;
 } //end function
 
 
 //Make table entry input form
-function maaa_dataform($maaa_tablechoice, $maaa_valsarray, $maaa_valscount) {
+function maaa_make_dataform_safe($maaa_tablechoice, $maaa_valsarray, $maaa_valscount) {
   $maaa_delete = "enabled";
   if ($maaa_valsarray == "none") {
     unset($maaa_valsarray);
-    for ($i=0; $i<=$maaa_valscount-1; $i++) {
+    for ($i=0; $i<$maaa_valscount; $i++) {
       $maaa_valsarray[$i] = "";
     } //end for
     $maaa_delete = "disabled";
@@ -70,7 +78,7 @@ function maaa_dataform($maaa_tablechoice, $maaa_valsarray, $maaa_valscount) {
 
   switch ($maaa_tablechoice) {
     case "accomtrans":
-      $maaa_dataform = '<form method="post" action="" name="f_accomtrans">' . wp_nonce_field('maaa_accomtrans_nonce') . '
+      $maaa_dataform_safe = '<form method="post" action="" name="f_accomtrans">' . wp_nonce_field('maaa_accomtrans_nonce') . '
         <input type="hidden" name="val_tchoice" value="' . $maaa_tablechoice . '">
         <input type="hidden" name="val_idedit" value="' . $maaa_valsarray[0] . '">
         Countries:<br><input type="text" name="val_country1" value="' . $maaa_valsarray[1] . '"> &nbsp; &nbsp; <input type="text" name="val_country2" value="' . $maaa_valsarray[2] . '"><br>
@@ -96,7 +104,7 @@ function maaa_dataform($maaa_tablechoice, $maaa_valsarray, $maaa_valscount) {
       } else {
         $maaa_radio = 'Type:<br><input type="radio" name="val_type" value="bud">Budgeted&nbsp;&nbsp;<input type="radio" name="val_type" value="act" checked>Actual<br>';
       } //end if
-      $maaa_dataform = '<form method="post" action="" name="f_budget">' . wp_nonce_field('maaa_budget_nonce') . '
+      $maaa_dataform_safe = '<form method="post" action="" name="f_budget">' . wp_nonce_field('maaa_budget_nonce') . '
         <input type="hidden" name="val_tchoice" value="' . $maaa_tablechoice . '">
         <input type="hidden" name="val_idedit" value="' . $maaa_valsarray[0] . '">
         ' . $maaa_radio . '
@@ -105,24 +113,24 @@ function maaa_dataform($maaa_tablechoice, $maaa_valsarray, $maaa_valscount) {
         Detail:<br><input type="text" name="val_detail" value="' . $maaa_valsarray[4] . '"><br>
         <input type="submit" value="Submit" name="submit_tupdate"> &nbsp; &nbsp; &nbsp;
         <input type="submit" value="Delete" name="delete_tupdate" ' . $maaa_delete . '></form>';
-      $maaa_dfields = array ("id", "type", "descrip", "price", "detail");
+      $maaa_dfields = array("id", "type", "descrip", "price", "detail");
       $maaa_tfields = "type, descrip, price, detail";
       $maaa_tftypes = "%s, %s, %f, %s";
       break;
     case "categories":
-      $maaa_dataform = '<form method="post" action="" name="f_categories">' . wp_nonce_field('maaa_categories_nonce') . '
+      $maaa_dataform_safe = '<form method="post" action="" name="f_categories">' . wp_nonce_field('maaa_categories_nonce') . '
         <input type="hidden" name="val_tchoice" value="' . $maaa_tablechoice . '">
         <input type="hidden" name="val_idedit" value="' . $maaa_valsarray[0] . '">
         Category:<br><input type="text" name="val_cat" value="' . $maaa_valsarray[1] . '"><br>
         <input type="submit" value="Submit" name="submit_tupdate"> &nbsp; &nbsp; &nbsp;
         <input type="submit" value="Delete" name="delete_tupdate" ' . $maaa_delete . '>
         </form>';
-      $maaa_dfields = array ("id", "category");
+      $maaa_dfields = array("id", "category");
       $maaa_tfields = "category";
       $maaa_tftypes = "%s";
       break;
     case "countries":
-      $maaa_dataform = '<form method="post" action="" name="f_countries">' . wp_nonce_field('maaa_countries_nonce') . '
+      $maaa_dataform_safe = '<form method="post" action="" name="f_countries">' . wp_nonce_field('maaa_countries_nonce') . '
         <input type="hidden" name="val_tchoice" value="' . $maaa_tablechoice . '">
         <input type="hidden" name="val_idedit" value="' . $maaa_valsarray[0] . '">
         Country:<br><input type="text" name="val_country" value="' . $maaa_valsarray[1] . '"><br>
@@ -137,13 +145,13 @@ function maaa_dataform($maaa_tablechoice, $maaa_valsarray, $maaa_valscount) {
         <input type="submit" value="Submit" name="submit_tupdate"> &nbsp; &nbsp; &nbsp;
         <input type="submit" value="Delete" name="delete_tupdate" ' . $maaa_delete . '>
         </form>';
-      $maaa_dfields = array ("id", "country", "visa_entry", "visa_exit", "visit_order", "approx_duration", "map_url");
+      $maaa_dfields = array("id", "country", "visa_entry", "visa_exit", "visit_order", "approx_duration", "map_url");
       $maaa_tfields = "country, visa_entry, visa_exit, visa_notes, visit_order, approx_duration, curr_convert, curr_foreign";
       $maaa_tftypes = "%s, %f, %f, %s, %d, %d, %f, %f";
       break;
     case "days":
       $maaa_countrystr = maaa_list_options("countries", "country", $maaa_valsarray[1]);
-      $maaa_dataform = '<form method="post" action="" name="f_days">' . wp_nonce_field('maaa_days_nonce') . '
+      $maaa_dataform_safe = '<form method="post" action="" name="f_days">' . wp_nonce_field('maaa_days_nonce') . '
         <input type="hidden" name="val_tchoice" value="' . $maaa_tablechoice . '">
         <input type="hidden" name="val_idedit" value="' . $maaa_valsarray[0] . '">
         Country:<br><select name="val_country">' . $maaa_countrystr . '</select><br>
@@ -152,14 +160,14 @@ function maaa_dataform($maaa_tablechoice, $maaa_valsarray, $maaa_valscount) {
         <input type="submit" value="Submit" name="submit_tupdate"> &nbsp; &nbsp; &nbsp;
         <input type="submit" value="Delete" name="delete_tupdate" ' . $maaa_delete . '>
         </form>';
-      $maaa_dfields = array ("id", "country", "entry_ts", "exit_ts", "days");
+      $maaa_dfields = array("id", "country", "entry_ts", "exit_ts", "days");
       $maaa_tfields = "country, entry_ts, exit_ts, days";
       $maaa_tftypes = "%s, %s, %s, %f";
       break;
     case "expenses":
       $maaa_countrystr = maaa_list_options("countries", "country", $maaa_valsarray[2]);
       $maaa_categorystr = maaa_list_options("categories", "category", $maaa_valsarray[3]);
-      $maaa_dataform = '<form method="post" action="" name="f_expenses">' . wp_nonce_field('maaa_expenses_nonce') . '
+      $maaa_dataform_safe = '<form method="post" action="" name="f_expenses">' . wp_nonce_field('maaa_expenses_nonce') . '
         <input type="hidden" name="val_tchoice" value="' . $maaa_tablechoice . '">
         <input type="hidden" name="val_idedit" value="' . $maaa_valsarray[0] . '">
         Date:<br><small>yyyy-mm-dd</small><br><input type="text" name="val_date" value="' . $maaa_valsarray[1] . '"><br>
@@ -171,7 +179,7 @@ function maaa_dataform($maaa_tablechoice, $maaa_valsarray, $maaa_valscount) {
         <input type="submit" value="Submit" name="submit_tupdate"> &nbsp; &nbsp; &nbsp;
         <input type="submit" value="Delete" name="delete_tupdate" ' . $maaa_delete . '>
         </form>';
-      $maaa_dfields = array ("id", "spenddate", "country", "category", "detail", "price");
+      $maaa_dfields = array("id", "spenddate", "country", "category", "detail", "price");
       $maaa_tfields = "spenddate, country, category, detail, price, units, ppu";
       $maaa_tftypes = "%s, %s, %s, %s, %f, %f, %f";
       break;
@@ -179,7 +187,7 @@ function maaa_dataform($maaa_tablechoice, $maaa_valsarray, $maaa_valscount) {
       echo 'There was an error in "switch ($maaa_tablechoice)"'; //error message
   } //end switch
 
-  return array ($maaa_dataform, $maaa_dfields, $maaa_tfields, $maaa_tftypes);
+  return array($maaa_dataform_safe, $maaa_dfields, $maaa_tfields, $maaa_tftypes);
 } //end function
 
 //Make data table
@@ -277,22 +285,22 @@ function maaa_forms_widget() {
       $maaa_form = 'Please select a table from the list.';
       break;
     case "accomtrans":
-      $maaa_data = maaa_dataform($maaa_tchoice, "none", 13);
+      $maaa_data = maaa_make_dataform_safe($maaa_tchoice, "none", 13);
       break;
     case "budget":
-      $maaa_data = maaa_dataform($maaa_tchoice, "none", 5);
+      $maaa_data = maaa_make_dataform_safe($maaa_tchoice, "none", 5);
       break;
     case "categories":
-      $maaa_data = maaa_dataform($maaa_tchoice, "none", 2);
+      $maaa_data = maaa_make_dataform_safe($maaa_tchoice, "none", 2);
       break;
     case "countries":
-      $maaa_data = maaa_dataform($maaa_tchoice, "none", 10);
+      $maaa_data = maaa_make_dataform_safe($maaa_tchoice, "none", 10);
       break;
     case "days":
-      $maaa_data = maaa_dataform($maaa_tchoice, "none", 5);
+      $maaa_data = maaa_make_dataform_safe($maaa_tchoice, "none", 5);
       break;
     case "expenses":
-      $maaa_data = maaa_dataform($maaa_tchoice, "none", 8);
+      $maaa_data = maaa_make_dataform_safe($maaa_tchoice, "none", 8);
       break;
     default:
       $maaa_form = "Use PHP MyAdmin to update the " . ucfirst($maaa_tchoice) . " table.";
@@ -300,14 +308,34 @@ function maaa_forms_widget() {
   } //end switch
 
   //Display table selection form
-  $maaa_tableoptions = array ("none","accomtrans","budget","categories","countries","days","expenses");
+  $maaa_tableoptions = array(
+    "none",
+    "accomtrans",
+    "budget",
+    "categories",
+    "countries",
+    "days",
+    "expenses"
+  );
   foreach ($maaa_tableoptions as $maaa_toption) {
     if ($maaa_toption == "none") {
-      $maaa_toptionstr = $maaa_toptionstr . '<option value="' . $maaa_toption . '">(select table)</option>';
+      $maaa_toptionstr_safe = $maaa_toptionstr_safe .
+                         '<option value="' .
+                         esc_attr( $maaa_toption ) .
+                         '">(select table)</option>';
     } else if ($maaa_toption == $maaa_tchoice) {
-      $maaa_toptionstr = $maaa_toptionstr . '<option selected value="' . $maaa_toption . '">' . ucfirst($maaa_toption) . '</option>';
+      $maaa_toptionstr_safe = $maaa_toptionstr_safe .
+                         '<option selected value="' .
+                         esc_attr( $maaa_toption ) .
+                         '">' .
+                         esc_html( ucfirst($maaa_toption) ) .
+                         '</option>';
     } else {
-      $maaa_toptionstr = $maaa_toptionstr . '<option value="' . $maaa_toption . '">' . ucfirst($maaa_toption) . '</option>';
+      $maaa_toptionstr_safe = $maaa_toptionstr_safe .
+                         '<option value="' .
+                         esc_attr( $maaa_toption ) . '">' .
+                         esc_html( ucfirst($maaa_toption) ) .
+                         '</option>';
     } //end if
   } //end for
   echo '
@@ -317,9 +345,8 @@ function maaa_forms_widget() {
         <form method="post" action="">';
         wp_nonce_field('maaa_choosetable_nonce');
         echo '
-        <select name="tablechoice" class="postform">
-    ' . $maaa_toptionstr . '
-        </select>&nbsp;<input type="submit" value="Go" name="submit_tchoice">
+        <select name="tablechoice" class="postform">' . $maaa_toptionstr_safe . '</select>
+        <input type="submit" value="Go" name="submit_tchoice">
         &nbsp; &nbsp; <a href="http://www.meggangreen.com/maaa/stats" target="_new">View Stats</a>
         </form>
       </td>';
@@ -329,7 +356,7 @@ function maaa_forms_widget() {
     check_admin_referer('maaa_choosetable_nonce'); //check nonces
     //$maaa_tchoice = $_POST['tablechoice'];
     $maaa_table = $wpdb->prefix . "maaa_" . $maaa_tchoice;
-    echo '<td width="50%"><b>' . ucfirst($maaa_tchoice) . '</b></td></tr>
+    echo '<td width="50%"><b>' . esc_html( ucfirst($maaa_tchoice) ) . '</b></td></tr>
           <tr>
           <td></td>
           <td>' . $maaa_data[0] . '</td>
@@ -348,7 +375,7 @@ function maaa_forms_widget() {
     $maaa_updateid_loc = strrpos($maaa_updateid_post,",,");
     $maaa_updateid = substr($maaa_updateid_post,$maaa_updateid_loc+2);
     $maaa_idvals = $wpdb->get_row( "SELECT * FROM $maaa_table WHERE id = $maaa_updateid", ARRAY_N ); //$maaa_idvals[0]
-    $maaa_data = maaa_dataform($maaa_tchoice, $maaa_idvals, count($maaa_idvals));
+    $maaa_data = maaa_make_dataform_safe($maaa_tchoice, $maaa_idvals, count($maaa_idvals));
     echo '<td width="50%"><b>' . ucfirst($maaa_tchoice) . $maaa_updateid . '</b></td></tr>
           <tr>
           <td></td>
