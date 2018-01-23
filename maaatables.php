@@ -98,7 +98,7 @@ function maaa_make_dataform_safe($maaa_tablechoice, $maaa_valsarray, $maaa_valsc
         Cancellation Date:<br><small>yyyy-mm-dd hh:mm:ss</small><br><input type="text" name="val_confcancelled" value="' . esc_attr( $maaa_valsarray[12] ) . '"><br>
         <input type="submit" value="Submit" name="submit_tupdate"> &nbsp; &nbsp; &nbsp;
         <input type="submit" value="Delete" name="delete_tupdate" ' . esc_attr( $maaa_delete ) . '></form>';
-      $maaa_dfields = array ("id", "country1", "country2", "start_in", "end_out", "co_name", "notes", "conf_code");
+      $maaa_dfields = array("id", "country1", "country2", "start_in", "end_out", "co_name", "notes", "conf_code");
       $maaa_tfields = "country1, country2, start_in, end_out, co_name, co_address, co_phone, co_contact, notes, conf_code, conf_date, conf_cancelled";
       $maaa_tftypes = "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s";
       break;
@@ -307,29 +307,26 @@ function maaa_forms_widget() {
   //Choose table info to display
   switch ($maaa_tchoice) {
     case "none":
-      $maaa_form = 'Please select a table from the list.';
+      $maaa_output_data_safe = array('Please select a table from the list.');
       break;
     case "accomtrans":
-      $maaa_data = maaa_make_dataform_safe($maaa_tchoice, "none", 13);
+      $maaa_output_data_safe = maaa_make_dataform_safe($maaa_tchoice, "none", 13);
       break;
     case "budget":
-      $maaa_data = maaa_make_dataform_safe($maaa_tchoice, "none", 5);
+      $maaa_output_data_safe = maaa_make_dataform_safe($maaa_tchoice, "none", 5);
       break;
     case "categories":
-      $maaa_data = maaa_make_dataform_safe($maaa_tchoice, "none", 2);
+      $maaa_output_data_safe = maaa_make_dataform_safe($maaa_tchoice, "none", 2);
       break;
     case "countries":
-      $maaa_data = maaa_make_dataform_safe($maaa_tchoice, "none", 10);
+      $maaa_output_data_safe = maaa_make_dataform_safe($maaa_tchoice, "none", 10);
       break;
     case "days":
-      $maaa_data = maaa_make_dataform_safe($maaa_tchoice, "none", 5);
+      $maaa_output_data_safe = maaa_make_dataform_safe($maaa_tchoice, "none", 5);
       break;
     case "expenses":
-      $maaa_data = maaa_make_dataform_safe($maaa_tchoice, "none", 8);
+      $maaa_output_data_safe = maaa_make_dataform_safe($maaa_tchoice, "none", 8);
       break;
-    default:
-      $maaa_form = "Use PHP MyAdmin to update the " . ucfirst($maaa_tchoice) . " table.";
-      unset($maaa_sql);
   } //end switch
 
   //Display table selection form
@@ -363,6 +360,7 @@ function maaa_forms_widget() {
                          '</option>';
     } //end if
   } //end for
+
   echo '
   <table width="100%">
     <tr>
@@ -372,23 +370,22 @@ function maaa_forms_widget() {
         echo '
         <select name="tablechoice" class="postform">' . $maaa_toptionstr_safe . '</select>
         <input type="submit" value="Go" name="submit_tchoice">
-        &nbsp; &nbsp; <a href="http://www.meggangreen.com/maaa/stats" target="_new">View Stats</a>
+        &nbsp; &nbsp; <a href="' . esc_url("http://www.meggangreen.com/maaa/stats") . '" target="_new">View Stats</a>
         </form>
       </td>';
 
   //Load subforms to update table
   if (isset($_POST['submit_tchoice'])) { //Table choice is submitted
     check_admin_referer('maaa_choosetable_nonce'); //check nonces
-    //$maaa_tchoice = $_POST['tablechoice'];
     $maaa_table = $wpdb->prefix . "maaa_" . $maaa_tchoice;
     echo '<td width="50%"><b>' . esc_html( ucfirst($maaa_tchoice) ) . '</b></td></tr>
           <tr>
           <td></td>
-          <td>' . $maaa_data[0] . '</td>
+          <td>' . $maaa_output_data_safe[0] . '</td>
           </tr>
           <tr>
           <td colspan="2">
-            ' . maaa_make_output_table_safe($maaa_tchoice, $maaa_data[1]) . '
+            ' . maaa_make_output_table_safe($maaa_tchoice, $maaa_output_data_safe[1]) . '
           </td>
           </tr>
           </table>';
@@ -400,15 +397,15 @@ function maaa_forms_widget() {
     $maaa_updateid_loc = strrpos($maaa_updateid_post,",,");
     $maaa_updateid = substr($maaa_updateid_post,$maaa_updateid_loc+2);
     $maaa_idvals = $wpdb->get_row( "SELECT * FROM $maaa_table WHERE id = $maaa_updateid", ARRAY_N ); //$maaa_idvals[0]
-    $maaa_data = maaa_make_dataform_safe($maaa_tchoice, $maaa_idvals, count($maaa_idvals));
-    echo '<td width="50%"><b>' . ucfirst($maaa_tchoice) . $maaa_updateid . '</b></td></tr>
+    $maaa_output_data_safe = maaa_make_dataform_safe($maaa_tchoice, $maaa_idvals, count($maaa_idvals));
+    echo '<td width="50%"><b>' . esc_html( ucfirst($maaa_tchoice) ) . '&nbsp;' . esc_html( $maaa_updateid ) . '</b></td></tr>
           <tr>
           <td></td>
-          <td>' . $maaa_data[0] . '</td>
+          <td>' . $maaa_output_data_safe[0] . '</td>
           </tr>
           <tr>
           <td colspan="2">
-            ' . maaa_make_output_table_safe($maaa_tchoice, $maaa_data[1]) . '
+            ' . maaa_make_output_table_safe($maaa_tchoice, $maaa_output_data_safe[1]) . '
           </td>
           </tr>
           </table>';
@@ -418,8 +415,7 @@ function maaa_forms_widget() {
     if (isset($_POST[val_idedit])) {
       $maaa_val_id = $_POST[val_idedit];
     } //end if
-    //$maaa_tchoice = $_POST['val_tchoice'];
-    //$maaa_table = $wpdb->prefix . "maaa_" . $maaa_tchoice;
+
     switch ($maaa_tchoice) {
       case "accomtrans":
         check_admin_referer('maaa_accomtrans_nonce');
@@ -435,7 +431,7 @@ function maaa_forms_widget() {
         $maaa_val_confcode = filter_var($_POST['val_confcode'], FILTER_CALLBACK, array("options"=>"maaa_filterinput"));
         $maaa_val_confdate = filter_var($_POST['val_confdate'], FILTER_CALLBACK, array("options"=>"maaa_filterinput"));
         $maaa_val_confcancelled = filter_var($_POST['val_confcancelled'], FILTER_CALLBACK, array("options"=>"maaa_filterinput"));
-        $maaa_valstr = array ($maaa_val_country1, $maaa_val_country2, $maaa_val_startin, $maaa_val_endout, $maaa_val_coname, $maaa_val_coaddress, $maaa_val_cophone, $maaa_val_cocontact, $maaa_val_notes, $maaa_val_confcode, $maaa_val_confdate, $maaa_val_confcancelled);
+        $maaa_valstr = array($maaa_val_country1, $maaa_val_country2, $maaa_val_startin, $maaa_val_endout, $maaa_val_coname, $maaa_val_coaddress, $maaa_val_cophone, $maaa_val_cocontact, $maaa_val_notes, $maaa_val_confcode, $maaa_val_confdate, $maaa_val_confcancelled);
         break;
       case "budget":
         check_admin_referer('maaa_budget_nonce');
@@ -443,12 +439,12 @@ function maaa_forms_widget() {
         $maaa_val_descrip = filter_var($_POST['val_descrip'], FILTER_CALLBACK, array("options"=>"maaa_filterinput"));
         $maaa_val_price = filter_var($_POST['val_price'], FILTER_CALLBACK, array("options"=>"maaa_filterinput"));
         $maaa_val_detail = filter_var($_POST['val_detail'], FILTER_CALLBACK, array("options"=>"maaa_filterinput"));
-        $maaa_valstr = array ($maaa_val_type, $maaa_val_descrip, $maaa_val_price, $maaa_val_detail);
+        $maaa_valstr = array($maaa_val_type, $maaa_val_descrip, $maaa_val_price, $maaa_val_detail);
         break;
       case "categories":
         check_admin_referer('maaa_categories_nonce');
         $maaa_val_category = filter_var($_POST['val_cat'], FILTER_CALLBACK, array("options"=>"maaa_filterinput"));
-        $maaa_valstr = array ($maaa_val_category);
+        $maaa_valstr = array($maaa_val_category);
         break;
       case "countries":
         check_admin_referer('maaa_countries_nonce');
@@ -460,7 +456,7 @@ function maaa_forms_widget() {
         $maaa_val_duration = filter_var($_POST['val_duration'], FILTER_CALLBACK, array("options"=>"maaa_filterinput"));
         $maaa_val_currconvert = filter_var($_POST['val_currconvert'], FILTER_CALLBACK, array("options"=>"maaa_filterinput"));
         $maaa_val_currforeign = filter_var($_POST['val_currforeign'], FILTER_CALLBACK, array("options"=>"maaa_filterinput"));
-        $maaa_valstr = array ($maaa_val_country, $maaa_val_visaentry, $maaa_val_visaexit, $maaa_val_visanotes, $maaa_val_visitorder, $maaa_val_duration, $maaa_val_currconvert, $maaa_val_currforeign );
+        $maaa_valstr = array($maaa_val_country, $maaa_val_visaentry, $maaa_val_visaexit, $maaa_val_visanotes, $maaa_val_visitorder, $maaa_val_duration, $maaa_val_currconvert, $maaa_val_currforeign );
         break;
       case "days":
         check_admin_referer('maaa_days_nonce');
@@ -468,7 +464,7 @@ function maaa_forms_widget() {
         $maaa_val_entry = filter_var($_POST['val_entry'], FILTER_CALLBACK, array("options"=>"maaa_filterinput"));
         $maaa_val_exit = filter_var($_POST['val_exit'], FILTER_CALLBACK, array("options"=>"maaa_filterinput"));
         $maaa_val_days = maaa_date_diff($maaa_val_entry,$maaa_val_exit,0)[1];
-        $maaa_valstr = array ($maaa_val_country,$maaa_val_entry,$maaa_val_exit,$maaa_val_days);
+        $maaa_valstr = array($maaa_val_country,$maaa_val_entry,$maaa_val_exit,$maaa_val_days);
         break;
       case "expenses":
         check_admin_referer('maaa_expenses_nonce');
@@ -479,7 +475,7 @@ function maaa_forms_widget() {
         $maaa_val_price = filter_var($_POST['val_price'], FILTER_CALLBACK, array("options"=>"maaa_filterinput"));
         $maaa_val_units = filter_var($_POST['val_units'], FILTER_CALLBACK, array("options"=>"maaa_filterinput"));
         $maaa_val_ppu = $maaa_val_price / $maaa_val_units;
-        $maaa_valstr = array ($maaa_val_date,$maaa_val_country,$maaa_val_category,$maaa_val_detail,$maaa_val_price,$maaa_val_units,$maaa_val_ppu);
+        $maaa_valstr = array($maaa_val_date,$maaa_val_country,$maaa_val_category,$maaa_val_detail,$maaa_val_price,$maaa_val_units,$maaa_val_ppu);
         break;
       default:
         $maaa_form = '<center>Not so much.</center>';
@@ -487,17 +483,17 @@ function maaa_forms_widget() {
 
     //Execute query and display result
     if (isset($maaa_val_id) && $maaa_val_id !="" && isset($_POST['submit_tupdate'])) {
-      $maaa_data[2] = explode(", ",$maaa_data[2]);
-      $maaa_data[3] = explode(", ",$maaa_data[3]);
-      for ($i=0; $i<=count($maaa_data[2])-1; $i++) {
-        $maaa_setstr[$i] = $maaa_data[2][$i] . ' = ' . $maaa_data[3][$i];
+      $maaa_output_data_safe[2] = explode(", ", $maaa_output_data_safe[2]);
+      $maaa_output_data_safe[3] = explode(", ", $maaa_output_data_safe[3]);
+      for ($i=0; $i<count($maaa_output_data_safe[2]); $i++) {
+        $maaa_setstr[$i] = $maaa_output_data_safe[2][$i] . ' = ' . $maaa_output_data_safe[3][$i];
       } //end for
       $maaa_setstr = implode(", ",$maaa_setstr);
       $maaa_sql = $wpdb->prepare( "UPDATE $maaa_table SET $maaa_setstr WHERE id = $maaa_val_id", $maaa_valstr );
     } else if (isset($maaa_val_id) && $maaa_val_id !="" && isset($_POST['delete_tupdate'])) {
       $maaa_sql = $wpdb->prepare( "DELETE FROM $maaa_table WHERE id = $maaa_val_id LIMIT 1", $maaa_valstr );
     } else {
-      $maaa_sql = $wpdb->prepare( "INSERT INTO $maaa_table ( $maaa_data[2] ) VALUES ( $maaa_data[3] )", $maaa_valstr );
+      $maaa_sql = $wpdb->prepare( "INSERT INTO $maaa_table ( $maaa_output_data_safe[2] ) VALUES ( $maaa_output_data_safe[3] )", $maaa_valstr );
     } //end if
     echo '<td width="50%"><b>' . ucfirst($maaa_tchoice) . '</b></td></tr>
           <tr><td valign="top">';
@@ -509,19 +505,19 @@ function maaa_forms_widget() {
     echo implode('<br>',$maaa_valstr);
     echo '</td>
           <td valign="top">
-            ' . $maaa_data[0] . '
+            ' . $maaa_output_data_safe[0] . '
           </td>
         </tr>
         <tr>
           <td colspan="2">
-            ' . maaa_make_output_table_safe($maaa_tchoice, $maaa_data[1]) . '
+            ' . maaa_make_output_table_safe($maaa_tchoice, $maaa_output_data_safe[1]) . '
           </td>
         </tr>
       </table>';
   } else {
-  echo '
-    </tr>
-  </table>';
+    echo '
+      </tr>
+    </table>';
   } //end if
 } //end function
 
