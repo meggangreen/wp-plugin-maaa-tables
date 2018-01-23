@@ -40,7 +40,7 @@ function maaa_calc_stat_vals($maaa_funcamt, $maaa_funcdiv) {
 
 
 //Make option tags for lists
-function maaa_list_options($maaa_listtable, $maaa_listcol, $maaa_listsel) {
+function maaa_make_dropdown_safe($maaa_listtable, $maaa_listcol, $maaa_listsel) {
   global $wpdb;
   $maaa_listarr = $wpdb->get_col( "SELECT " . $maaa_listcol . " FROM " . $wpdb->prefix . "maaa_" . $maaa_listtable . " ORDER BY " . $maaa_listcol . " ASC" );
   foreach ($maaa_listarr as $maaa_listopt) {
@@ -60,6 +60,7 @@ function maaa_list_options($maaa_listtable, $maaa_listcol, $maaa_listsel) {
                            '</option>';
     } //end if
   } //end for
+
   return $maaa_liststr_safe;
 } //end function
 
@@ -67,6 +68,9 @@ function maaa_list_options($maaa_listtable, $maaa_listcol, $maaa_listsel) {
 //Make table entry input form
 function maaa_make_dataform_safe($maaa_tablechoice, $maaa_valsarray, $maaa_valscount) {
   $maaa_delete = "enabled";
+  $maaa_radio = "";
+
+  //if we're starting with a blank form, ie valsarray is empty
   if ($maaa_valsarray == "none") {
     unset($maaa_valsarray);
     for ($i=0; $i<$maaa_valscount; $i++) {
@@ -74,26 +78,26 @@ function maaa_make_dataform_safe($maaa_tablechoice, $maaa_valsarray, $maaa_valsc
     } //end for
     $maaa_delete = "disabled";
   } //end if
-  $maaa_radio = "";
 
   switch ($maaa_tablechoice) {
     case "accomtrans":
       $maaa_dataform_safe = '<form method="post" action="" name="f_accomtrans">' . wp_nonce_field('maaa_accomtrans_nonce') . '
-        <input type="hidden" name="val_tchoice" value="' . $maaa_tablechoice . '">
-        <input type="hidden" name="val_idedit" value="' . $maaa_valsarray[0] . '">
-        Countries:<br><input type="text" name="val_country1" value="' . $maaa_valsarray[1] . '"> &nbsp; &nbsp; <input type="text" name="val_country2" value="' . $maaa_valsarray[2] . '"><br>
-        Timestamps: &nbsp; &nbsp; <small>yyyy-mm-dd hh:mm:ss</small><br><input type="text" name="val_startin" value="' . $maaa_valsarray[3] . '"> &nbsp; &nbsp; <input type="text" name="val_endout" value="' . $maaa_valsarray[4] . '"><br>
+        <input type="hidden" name="val_tchoice" value="' . esc_attr( $maaa_tablechoice ) . '">
+        <input type="hidden" name="val_idedit" value="' . esc_attr( $maaa_valsarray[0] ) . '">
+        Countries:<br>
+        <input type="text" name="val_country1" value="' . esc_attr( $maaa_valsarray[1] ) . '"> &nbsp; &nbsp; <input type="text" name="val_country2" value="' . esc_attr( $maaa_valsarray[2] ) . '"><br>
+        Timestamps: &nbsp; &nbsp; <small>yyyy-mm-dd hh:mm:ss</small><br><input type="text" name="val_startin" value="' . esc_attr( $maaa_valsarray[3] ) . '"> &nbsp; &nbsp; <input type="text" name="val_endout" value="' . esc_attr( $maaa_valsarray[4] ) . '"><br>
         Company Information:<br>
-           &nbsp; &nbsp; Name: &nbsp; &nbsp; <input type="text" name="val_coname" value="' . $maaa_valsarray[5] . '"><br>
-           &nbsp; &nbsp; Address: &nbsp; &nbsp; <input type="text" name="val_coaddress" value="' . $maaa_valsarray[6] . '"><br>
-           &nbsp; &nbsp; Phone: &nbsp; &nbsp; <input type="text" name="val_cophone" value="' . $maaa_valsarray[7] . '"><br>
-           &nbsp; &nbsp; Contact: &nbsp; &nbsp; <input type="text" name="val_cocontact" value="' . $maaa_valsarray[8] . '"><br>
-        Notes:<br><input type="text" name="val_notes" value="' . $maaa_valsarray[9] . '"><br>
-        Confirmation Code:<br><input type="text" name="val_confcode" value="' . $maaa_valsarray[10] . '"><br>
-        Confirmation Date:<br><small>yyyy-mm-dd hh:mm:ss</small><br><input type="text" name="val_confdate" value="' . $maaa_valsarray[11] . '"><br>
-        Cancellation Date:<br><small>yyyy-mm-dd hh:mm:ss</small><br><input type="text" name="val_confcancelled" value="' . $maaa_valsarray[12] . '"><br>
+           &nbsp; &nbsp; Name: &nbsp; &nbsp; <input type="text" name="val_coname" value="' . esc_attr( $maaa_valsarray[5] ) . '"><br>
+           &nbsp; &nbsp; Address: &nbsp; &nbsp; <input type="text" name="val_coaddress" value="' . esc_attr( $maaa_valsarray[6] ) . '"><br>
+           &nbsp; &nbsp; Phone: &nbsp; &nbsp; <input type="text" name="val_cophone" value="' . esc_attr( $maaa_valsarray[7] ) . '"><br>
+           &nbsp; &nbsp; Contact: &nbsp; &nbsp; <input type="text" name="val_cocontact" value="' . esc_attr( $maaa_valsarray[8] ) . '"><br>
+        Notes:<br><input type="text" name="val_notes" value="' . esc_attr( $maaa_valsarray[9] ) . '"><br>
+        Confirmation Code:<br><input type="text" name="val_confcode" value="' . esc_attr( $maaa_valsarray[10] ) . '"><br>
+        Confirmation Date:<br><small>yyyy-mm-dd hh:mm:ss</small><br><input type="text" name="val_confdate" value="' . esc_attr( $maaa_valsarray[11] ) . '"><br>
+        Cancellation Date:<br><small>yyyy-mm-dd hh:mm:ss</small><br><input type="text" name="val_confcancelled" value="' . esc_attr( $maaa_valsarray[12] ) . '"><br>
         <input type="submit" value="Submit" name="submit_tupdate"> &nbsp; &nbsp; &nbsp;
-        <input type="submit" value="Delete" name="delete_tupdate" ' . $maaa_delete . '></form>';
+        <input type="submit" value="Delete" name="delete_tupdate" ' . esc_attr( $maaa_delete ) . '></form>';
       $maaa_dfields = array ("id", "country1", "country2", "start_in", "end_out", "co_name", "notes", "conf_code");
       $maaa_tfields = "country1, country2, start_in, end_out, co_name, co_address, co_phone, co_contact, notes, conf_code, conf_date, conf_cancelled";
       $maaa_tftypes = "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s";
@@ -150,7 +154,7 @@ function maaa_make_dataform_safe($maaa_tablechoice, $maaa_valsarray, $maaa_valsc
       $maaa_tftypes = "%s, %f, %f, %s, %d, %d, %f, %f";
       break;
     case "days":
-      $maaa_countrystr = maaa_list_options("countries", "country", $maaa_valsarray[1]);
+      $maaa_countrystr = maaa_make_dropdown_safe("countries", "country", $maaa_valsarray[1]);
       $maaa_dataform_safe = '<form method="post" action="" name="f_days">' . wp_nonce_field('maaa_days_nonce') . '
         <input type="hidden" name="val_tchoice" value="' . $maaa_tablechoice . '">
         <input type="hidden" name="val_idedit" value="' . $maaa_valsarray[0] . '">
@@ -165,8 +169,8 @@ function maaa_make_dataform_safe($maaa_tablechoice, $maaa_valsarray, $maaa_valsc
       $maaa_tftypes = "%s, %s, %s, %f";
       break;
     case "expenses":
-      $maaa_countrystr = maaa_list_options("countries", "country", $maaa_valsarray[2]);
-      $maaa_categorystr = maaa_list_options("categories", "category", $maaa_valsarray[3]);
+      $maaa_countrystr = maaa_make_dropdown_safe("countries", "country", $maaa_valsarray[2]);
+      $maaa_categorystr = maaa_make_dropdown_safe("categories", "category", $maaa_valsarray[3]);
       $maaa_dataform_safe = '<form method="post" action="" name="f_expenses">' . wp_nonce_field('maaa_expenses_nonce') . '
         <input type="hidden" name="val_tchoice" value="' . $maaa_tablechoice . '">
         <input type="hidden" name="val_idedit" value="' . $maaa_valsarray[0] . '">
@@ -526,7 +530,7 @@ function maaa_sidebar_widget_init() {
     } else {
       $maaa_cchoice = "All Countries";
     }
-    $maaa_countrystr = maaa_list_options("countries", "country", $maaa_cchoice);
+    $maaa_countrystr = maaa_make_dropdown_safe("countries", "country", $maaa_cchoice);
 
     //Retrieve category sums
     $maaa_category = $wpdb->get_col( "SELECT category FROM " . $wpdb->prefix . "maaa_categories ORDER BY category ASC" );
