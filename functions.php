@@ -1,6 +1,20 @@
 <?php
 
 /****************************
+  *** DASHBOARD COLUMNS ***
+****************************/
+function wpse126301_dashboard_columns() {
+    add_screen_option(
+        'layout_columns',
+        array(
+            'max'     => 2,
+            'default' => 2
+        )
+    );
+}
+add_action( 'admin_head-index.php', 'wpse126301_dashboard_columns' );
+
+/****************************
   *** ENQUEUE CUSTOM JS ***
 ****************************/
 function childmg_js() {
