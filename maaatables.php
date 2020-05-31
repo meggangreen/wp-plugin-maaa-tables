@@ -1,198 +1,476 @@
 <?php
 
-/*
-Plugin Name:  MAAA Tables
-Plugin URI:   http://meggangreen.com
-Description:  update maaa tables
-Version:      1.1
-Updated:      2018-01-22
-Author:       Meggan Green
-Author URI:   http://meggangreen.com
-License:      GNU GPL2
+/**
+* Plugin Name:  MAAA Tables
+* Plugin URI:   http://meggangreen.com
+* Description:  update maaa tables
+* Version:      2.0.0
+* Updated:      2018-01-22
+* Author:       Meggan Green
+* Author URI:   http://meggangreen.com
+* License:      GNU GPL2
 */
 
-/*
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License, version 2, as
-published by the Free Software Foundation.
+/**
+ * Returns the left-of- and right-of-decimal values.
+ * 
+ * Given the total amount and the divisor (1 if total, num of days if average),
+ * calculates the values for the left and right sides of the decimal. These are
+ * divided so as to permit easy decimal alignment.
+ * 
+ * @since 0.0.0
+ * @since 2.0.0 Cleaned up as part of major refactor
+ * 
+ * @param float $dollars Total dollar amount
+ * @param float $days Number of days to divide by (1 for total)
+ * 
+ * @return array {
+ *     @type string $dollars_left String of left-of-decimal value
+ *     @type string $dollars_right String of right-of-decimal value
+ * }
+ */
+function get_left_right_values($dollars, $days) {
+  if ( $days <= 0 ) { $days = 1; }
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+  $dollars_average = $dollars / $days;
+  $dollars_left = floor($dollars_average);
+  $dollars_right = ($dollars_average - $dollars_left) * 100;
 
-You can receive a copy of the GNU General Public License by
-writing to the Free Software Foundation, Inc.,
-51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-
-//Output td code for widget
-function maaa_calc_stat_vals($maaa_funcamt, $maaa_funcdiv) {
-  if ( $maaa_funcdiv <= 0 ) { $maaa_funcdiv = 1; } // can't divide by 0, empty
-  $amtRaw = round( $maaa_funcamt / $maaa_funcdiv, 2 );
-  $amtDL = floor($amtRaw);
-  $amtDR = ($amtRaw - $amtDL) * 100;
-  $amtDLs = number_format($amtDL);
-  $amtDRs = sprintf("%02d", number_format($amtDR));
-
-  return array($amtDLs, $amtDRs);
+  return array(number_format($dollars_left), number_format($dollars_right));
 }
 
 
-//Make option tags for lists
-function maaa_make_dropdown_safe($maaa_listtable, $maaa_listcol, $maaa_listsel) {
+/**
+ * Makes option tags for dropdown selectors.
+ * 
+ * Makes an option tag for each option in a given table and column. If the
+ * option matches the user selection, the option tag includes the "selected"
+ * attribute. Returns all the option tags as one string.
+ * 
+ * @since 0.0.0
+ * @since 2.0.0 Cleaned up as part of major refactor
+ * 
+ * @param string $table Name of table holding the data
+ * @param string $column Name of column holding the data
+ * @param string $selection Selected value
+ * 
+ * @return string $options String of option tags
+ */
+function make_options($table, $column, $selection) {
   global $wpdb;
-  $maaa_listarr = $wpdb->get_col( "SELECT " . $maaa_listcol . " FROM " . $wpdb->prefix . "maaa_" . $maaa_listtable . " ORDER BY " . $maaa_listcol . " ASC" );
-  foreach ($maaa_listarr as $maaa_listopt) {
-    if ($maaa_listopt == $maaa_listsel) {
-      $maaa_liststr_safe = $maaa_liststr_safe .
-                           '<option selected value="' .
-                           esc_attr( $maaa_listopt ) .
-                           '">' .
-                           esc_html( $maaa_listopt ) .
-                           '</option>';
+
+  $all_values = $wpdb->get_col( "SELECT " . $column . " FROM " . $wpdb->prefix . "maaa_" . $table . " ORDER BY " . $column . " ASC" );
+  
+  $options = '';
+  foreach ($all_values as $value) {
+    if ($value == $selection) {
+      $options = $options .
+                 '<option selected value="' . esc_attr( $value ) . '">' .
+                 esc_html( $value ) .
+                 '</option>';
     } else {
-      $maaa_liststr_safe = $maaa_liststr_safe .
-                           '<option value="' .
-                           esc_attr( $maaa_listopt ) .
-                           '">' .
-                           esc_html( $maaa_listopt ) .
-                           '</option>';
-    } //end if
-  } //end for
+      $options = $options .
+                 '<option value="' . esc_attr( $value ) . '">' .
+                 esc_html( $value ) .
+                 '</option>';
+    }
+  }
 
-  return $maaa_liststr_safe;
-} //end function
+  return $options;
+}
 
 
-//Make table entry input form
-function maaa_make_dataform_safe($maaa_tablechoice, $maaa_valsarray, $maaa_valscount) {
-  $maaa_delete = "enabled";
-  $maaa_radio = "";
+/**
+ * The Dashboard widget data entry form.
+ * 
+ * The HTML form, blank (default) for entering new data or populated for editing
+ * or deleting a table row from a selected table. Only sub-classes should be used.
+ * 
+ * @since 2.0.0
+ * 
+ * @var string $table Table name  #TODO is necessary to keep?
+ * @var string $name Form name
+ * @var string $nonce String passed to wp_nonce_field()
+ * @var mutable string OR array $values Array of table row values or "none"  #TODO pass empty array instead of string "none"
+ * @var integer $count Number of values in array $dfields  #TODO deprecate
+ * @var string $delete Sets "Delete" button to property to "enabled" or "disabled"  #TODO change to bool
+ * @var string $content Entire HTML form
+ * @var array $dfields Array of required table columns
+ * @var string $tfields Stringified list of all table columns, except ID
+ * @var string $tftypes Stringified list of data types corresponding to $tfields
+ */
+abstract class EntryForm {
+  protected $table;
+  protected $name;
+  protected $nonce;
+  protected $values;
+  protected $count;
+  protected $delete;
+  public $content;
+  public $dfields;
+  public $tfields;
+  public $tftypes;
+  
+  function __construct($table, $values, $count) {
+    $this->table = esc_attr($table);
+    $this->name = "f_" . $this->table;
+    $this->nonce = "maaa_" . $this->table . "_nonce";
+    $this->count = $count;
+    $this->values = $this->_clean_values($values);
+    $this -> _set_delete();
+  }
 
-  //if we're starting with a blank form, ie valsarray is empty
-  if ($maaa_valsarray == "none") {
-    unset($maaa_valsarray);
-    for ($i=0; $i<$maaa_valscount; $i++) {
-      $maaa_valsarray[$i] = "";
-    } //end for
-    $maaa_delete = "disabled";
-  } //end if
+  /**
+   * Creates $values array OR sanitizes $values using esc_attr().
+   * 
+   * #TODO accept empty array instead of string
+   * 
+   * @since 2.0.0 Moved into separate function as part of major refactor
+   * @param mutable string OR array
+   * @return array
+   */
+  protected function _clean_values($values) {
+    if ( $values == "none" ) {  // Starting with a blank form
+      unset($values);
+      return array_map(function($v) {return "";}, range(0, $this->count));
+    } else {
+      return array_map(function($v) {return esc_attr($v);}, $values);
+    }
+  }
+  
+  /**
+   * Builds HTML form header.
+   * 
+   * @since 2.0.0 Moved into separate function as part of major refactor
+   * @return string
+   */
+  protected function _get_header() {
+    return '<form method="post" action="" name="' . $this->name . '">'
+           . wp_nonce_field($this->nonce) . 
+           '  <input type="hidden" name="val_tchoice" value="' . $this->table . '">
+              <input type="hidden" name="val_idedit" value="' . $this->values[0] . '">';
+  }
+  
+  /**
+   * Sets the dfields, tfields, and tftypes properties.
+   * 
+   * Sets the field properties to values hard-coded in each sub-class.
+   * 
+   * @since 2.0.0
+   */
+  abstract protected function _set_fields();
+  
+  /**
+   * Builds HTML form body.
+   * 
+   * Uses hard-coded HTML tags and the values property to build the form body.
+   * 
+   * @since 2.0.0
+   * @return string
+   */
+  abstract protected function _get_body();
+  
+  /**
+   * Sets delete property.
+   * 
+   * Called by __construct(); sets the delete property.
+   * #TODO deprecate
+   * 
+   * @since 2.0.0 Moved into separate function as part of major refactor
+   */
+  protected function _set_delete() {
+    $this->delete = ($this->values[0] == "" ? "disabled" : "enabled");
+  }
+  
+  /**
+   * Builds HTML form footer.
+   * 
+   * @since 2.0.0 Moved into separate function as part of major refactor
+   * @return string
+   */
+  protected function _get_footer() {
+    return '  <input type="submit" value="Submit" name="submit_tupdate"> 
+              &nbsp; &nbsp; &nbsp;
+              <input type="submit" value="Delete" name="delete_tupdate" ' . $this->delete . '>
+            </form>';
+  }
 
-  switch ($maaa_tablechoice) {
+  /**
+   * Builds entire HTML form and sets content property.
+   * 
+   * @since 2.0.0
+   */
+  protected function _set_content() {
+    $this->content = $this->_get_header() . $this->_get_body() . $this->_get_footer();
+  }
+
+}
+
+/**
+ * The Dashboard widget AccomTrans data entry form.
+ * 
+ * @since 2.0.0
+ * 
+ * @see EntryForm
+ */
+class AccomTrans extends EntryForm {
+  function __construct($table, $values, $count) {
+    // PHP docs indicate I shouldn't need to pass in the params above, but I do
+    // https://www.php.net/manual/en/classobj.examples.php
+    parent::__construct($table, $values, $count);
+    $this -> _set_fields();
+    $this -> _set_content();
+  }
+  
+  protected function _set_fields() {
+    $this->dfields = array("id", "country1", "country2", "start_in", "end_out","co_name", "notes", "conf_code");
+    $this->tfields = "country1, country2, start_in, end_out, co_name, co_address, co_phone, co_contact, notes, conf_code, conf_date, conf_cancelled";
+    $this->tftypes = "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s";
+  }
+
+  protected function _get_body() {
+    return 'Countries:<br>
+            <input type="text" name="val_country1" value="' . $this->values[1] . '"> &nbsp; &nbsp; <input type="text" name="val_country2" value="' . $this->values[2] . '"><br>
+            Timestamps: &nbsp; &nbsp; <small>yyyy-mm-dd hh:mm:ss</small><br>
+            <input type="text" name="val_startin" value="' . $this->values[3] . '"> &nbsp; &nbsp; <input type="text" name="val_endout" value="' . $this->values[4] . '"><br>
+            Company Information:<br>
+              &nbsp; &nbsp; Name: &nbsp; &nbsp; <input type="text" name="val_coname" value="' . $this->values[5] . '"><br>
+              &nbsp; &nbsp; Address: &nbsp; &nbsp; <input type="text" name="val_coaddress" value="' . $this->values[6] . '"><br>
+              &nbsp; &nbsp; Phone: &nbsp; &nbsp; <input type="text" name="val_cophone" value="' . $this->values[7] . '"><br>
+              &nbsp; &nbsp; Contact: &nbsp; &nbsp; <input type="text" name="val_cocontact" value="' . $this->values[8] . '"><br>
+            Notes:<br><input type="text" name="val_notes" value="' . $this->values[9] . '"><br>
+            Confirmation Code:<br>
+            <input type="text" name="val_confcode" value="' . $this->values[10] . '"><br>
+            Confirmation Date:<br>
+            <small>yyyy-mm-dd hh:mm:ss</small><br>
+            <input type="text" name="val_confdate" value="' . $this->values[11] . '"><br>
+            Cancellation Date:<br>
+            <small>yyyy-mm-dd hh:mm:ss</small><br>
+            <input type="text" name="val_confcancelled" value="' . $this->values[12] . '"><br>';
+  }
+}
+
+/**
+ * The Dashboard widget Budget data entry form.
+ * 
+ * The Budget form has one unique property and one function, _set_radio_field().
+ * 
+ * @since 2.0.0
+ * @var string $maaa_radio Section of the form body
+ * 
+ * @see EntryForm
+ */
+class Budget extends EntryForm {
+  protected $maaa_radio;
+
+  function __construct($table, $values, $count) {
+    parent::__construct($table, $values, $count);
+    $this -> _set_fields();
+    $this -> _set_content();
+  }
+  
+  protected function _set_fields() {
+    $this->dfields = array("id", "type", "descrip", "price", "detail");
+    $this->tfields = "type, descrip, price, detail";
+    $this->tftypes = "%s, %s, %f, %s";
+  }
+  
+  /**
+   * Builds the first section of the form body.
+   * 
+   * The first input field of the Budget form body is a set of radio buttons
+   * describing whether the data is the budgeted or actual data. Called by
+   * _get_body().
+   * 
+   * @since 2.0.0
+   */
+  protected function _set_radio_field() {
+    if ($this->this->values[1] == "bud") {
+      $this->maaa_radio = 'Type:<br><input type="radio" name="val_type" value="bud" checked>Budgeted&nbsp;&nbsp;<input type="radio" name="val_type" value="act">Actual<br>';
+    } else {
+      $this->maaa_radio = 'Type:<br><input type="radio" name="val_type" value="bud">Budgeted&nbsp;&nbsp;<input type="radio" name="val_type" value="act" checked>Actual<br>';
+    }
+  }
+
+  protected function _get_body() {
+    $this -> _set_radio_field();
+    return $this->maaa_radio . '
+           Description:<br><input type="text" name="val_descrip" value="' . $this->values[2] . '"><br>
+           Price:<br><input type="text" name="val_price" value="' . $this->values[3] . '"><br>
+           Detail:<br><input type="text" name="val_detail" value="' . $this->values[4] . '"><br>';
+  }
+}
+
+/**
+ * The Dashboard widget Category data entry form.
+ * 
+ * @since 2.0.0
+ * 
+ * @see EntryForm
+ */
+class Category extends EntryForm {
+  function __construct($table, $values, $count) {
+    parent::__construct($table, $values, $count);
+    $this -> _set_fields();
+    $this -> _set_content();
+  }
+  
+  protected function _set_fields() {
+    $this->dfields = array("id", "category");
+    $this->tfields = "category";
+    $this->tftypes = "%s";
+  }
+  
+  protected function _get_body() {
+    return 'Category:<br>
+            <input type="text" name="val_cat" value="' . $this->values[1] . '"><br>';
+  }
+}
+
+/**
+ * The Dashboard widget Country data entry form.
+ * 
+ * @since 2.0.0
+ * 
+ * @see EntryForm
+ */
+class Country extends EntryForm {
+  function __construct($table, $values, $count) {
+    parent::__construct($table, $values, $count);
+    $this -> _set_fields();
+    $this -> _set_content();
+  }
+  
+  protected function _set_fields() {
+    $this->dfields = array("id", "country", "visa_entry", "visa_exit", "visit_order", "approx_duration", "map_url");
+    $this->tfields = "country, visa_entry, visa_exit, visa_notes, visit_order, approx_duration, curr_convert, curr_foreign";
+    $this->tftypes = "%s, %f, %f, %s, %d, %d, %f, %f";
+  }
+  
+  protected function _get_body() {
+    return 'Country:<br>
+            <input type="text" name="val_country" value="' . $this->values[1] . '"><br>
+            Visa Entry Fee:<br><input type="text" name="val_visaentry" value="' . $this->values[2] . '"><br>
+            Visa Exit Fee:<br><input type="text" name="val_visaexit" value="' . $this->values[3] . '"><br>
+            Visa Notes:<br><input type="text" name="val_visanotes" value="' . $this->values[4] . '"><br>
+            Visit Order:<br><input type="text" name="val_visitorder" value="' . $this->values[5] . '"><br>
+            Approximate Duration:<br><input type="text" name="val_duration" value="' . $this->values[6] . '"><br>
+            USD$1 Equals:<br><input type="text" name="val_currconvert" value="' . $this->values[7] . '"><br>
+            Foreign Amount Spent:<br><input type="text" name="val_currforeign" value="' . $this->values[8] . '"><br>
+            Map URL:<br>' .  esc_url( $this->values[9] ) .'<br>Use PHP MyAdmin to update the Map URL.<br>';
+  }
+}
+
+/**
+ * The Dashboard widget Day data entry form.
+ * 
+ * @since 2.0.0
+ * 
+ * @see EntryForm
+ */
+class Day extends EntryForm {
+  function __construct($table, $values, $count) {
+    parent::__construct($table, $values, $count);
+    $this -> _set_fields();
+    $this -> _set_content();
+  }
+  
+  protected function _set_fields() {
+    $this->dfields = array("id", "country", "entry_ts", "exit_ts", "days");
+    $this->tfields = "country, entry_ts, exit_ts, days";
+    $this->tftypes = "%s, %s, %s, %f";
+  }
+
+  protected function _get_body() {
+    $dropdown = make_options("countries", "country", $this->values[1]);
+    return 'Country:<br>
+            <select name="val_country">' . $dropdown . '</select><br>
+            Entry Timestamp:<br><small>yyyy-mm-dd hh:mm:ss</small><br>
+            <input type="text" name="val_entry" value="' . $this->values[2] . '"><br>
+            Exit Timestamp:<br><small>yyyy-mm-dd hh:mm:ss</small><br>
+            <input type="text" name="val_exit" value="' . $this->values[3] . '"><br>';
+  }
+}
+
+/**
+ * The Dashboard widget Expense data entry form.
+ * 
+ * @since 2.0.0
+ * 
+ * @see EntryForm
+ */
+class Expense extends EntryForm {
+  function __construct($table, $values, $count) {
+    parent::__construct($table, $values, $count);
+    $this -> _set_fields();
+    $this -> _set_content();
+  }
+  
+  protected function _set_fields() {
+    $this->dfields = array("id", "spenddate", "country", "category", "detail", "price");
+    $this->tfields = "spenddate, country, category, detail, price, units, ppu";
+    $this->tftypes = "%s, %s, %s, %s, %f, %f, %f";
+  }
+
+  protected function _get_body() {
+    $countries = make_options("countries", "country", $this->values[2]);
+    $categories = make_options("categories", "category", $this->values[3]);
+    return 'Date:<br><small>yyyy-mm-dd</small><br>
+            <input type="text" name="val_date" value="' . $this->values[1] . '"><br>
+            Country:<br><select name="val_country">' . $countries . '</select><br>
+            Category:<br><select name="val_category">' . $categories . '</select><br>
+            Detail:<br><input type="text" name="val_detail" value="' . $this->values[4] . '"><br>
+            Price:<br><input type="text" name="val_price" value="' . $this->values[5] . '"><br>
+            Num of Units:<br><input type="text" name="val_units" value="' . $this->values[6] . '"><br>';
+  }
+}
+
+
+/**
+ * Makes entry input form for Dashboard widget.
+ * 
+ * Builds the appropriate form based on the selected table.
+ * 
+ * @since 0.0.0
+ * @since 2.0.0 Cleaned up as part of major refactor
+ * 
+ * @param string $table Table name
+ * @param mutable string OR array $values Array of values or "none"  #TODO change to array only
+ * 
+ * @return array {  #TODO make return object instead
+ *     @type string $form->content HTML form
+ *     @type array $form->dfields Array of strings of required column names
+ *     @type string $form->tfields Stringified list of all column names, except ID
+ *     @type string $form->tftypes Stringified list of data types corresponding to tfields
+ * }
+ */ 
+function maaa_make_dataform_safe($table, $values, $count) {
+  
+  switch ($table) {
     case "accomtrans":
-      $maaa_dataform_safe = '<form method="post" action="" name="f_accomtrans">' . wp_nonce_field('maaa_accomtrans_nonce') . '
-        <input type="hidden" name="val_tchoice" value="' . esc_attr( $maaa_tablechoice ) . '">
-        <input type="hidden" name="val_idedit" value="' . esc_attr( $maaa_valsarray[0] ) . '">
-        Countries:<br>
-        <input type="text" name="val_country1" value="' . esc_attr( $maaa_valsarray[1] ) . '"> &nbsp; &nbsp; <input type="text" name="val_country2" value="' . esc_attr( $maaa_valsarray[2] ) . '"><br>
-        Timestamps: &nbsp; &nbsp; <small>yyyy-mm-dd hh:mm:ss</small><br><input type="text" name="val_startin" value="' . esc_attr( $maaa_valsarray[3] ) . '"> &nbsp; &nbsp; <input type="text" name="val_endout" value="' . esc_attr( $maaa_valsarray[4] ) . '"><br>
-        Company Information:<br>
-           &nbsp; &nbsp; Name: &nbsp; &nbsp; <input type="text" name="val_coname" value="' . esc_attr( $maaa_valsarray[5] ) . '"><br>
-           &nbsp; &nbsp; Address: &nbsp; &nbsp; <input type="text" name="val_coaddress" value="' . esc_attr( $maaa_valsarray[6] ) . '"><br>
-           &nbsp; &nbsp; Phone: &nbsp; &nbsp; <input type="text" name="val_cophone" value="' . esc_attr( $maaa_valsarray[7] ) . '"><br>
-           &nbsp; &nbsp; Contact: &nbsp; &nbsp; <input type="text" name="val_cocontact" value="' . esc_attr( $maaa_valsarray[8] ) . '"><br>
-        Notes:<br><input type="text" name="val_notes" value="' . esc_attr( $maaa_valsarray[9] ) . '"><br>
-        Confirmation Code:<br><input type="text" name="val_confcode" value="' . esc_attr( $maaa_valsarray[10] ) . '"><br>
-        Confirmation Date:<br><small>yyyy-mm-dd hh:mm:ss</small><br><input type="text" name="val_confdate" value="' . esc_attr( $maaa_valsarray[11] ) . '"><br>
-        Cancellation Date:<br><small>yyyy-mm-dd hh:mm:ss</small><br><input type="text" name="val_confcancelled" value="' . esc_attr( $maaa_valsarray[12] ) . '"><br>
-        <input type="submit" value="Submit" name="submit_tupdate"> &nbsp; &nbsp; &nbsp;
-        <input type="submit" value="Delete" name="delete_tupdate" ' . esc_attr( $maaa_delete ) . '></form>';
-      $maaa_dfields = array("id", "country1", "country2", "start_in", "end_out", "co_name", "notes", "conf_code");
-      $maaa_tfields = "country1, country2, start_in, end_out, co_name, co_address, co_phone, co_contact, notes, conf_code, conf_date, conf_cancelled";
-      $maaa_tftypes = "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s";
+      $form = new AccomTrans($table, $values, $count);
       break;
     case "budget":
-      if ($maaa_valsarray[1] == "bud") {
-        $maaa_radio = 'Type:<br><input type="radio" name="val_type" value="bud" checked>Budgeted&nbsp;&nbsp;<input type="radio" name="val_type" value="act">Actual<br>';
-      } else {
-        $maaa_radio = 'Type:<br><input type="radio" name="val_type" value="bud">Budgeted&nbsp;&nbsp;<input type="radio" name="val_type" value="act" checked>Actual<br>';
-      } //end if
-      $maaa_dataform_safe = '<form method="post" action="" name="f_budget">' . wp_nonce_field('maaa_budget_nonce') . '
-        <input type="hidden" name="val_tchoice" value="' . esc_attr( $maaa_tablechoice ) . '">
-        <input type="hidden" name="val_idedit" value="' . esc_attr( $maaa_valsarray[0] ) . '">
-        ' . $maaa_radio . '
-        Description:<br><input type="text" name="val_descrip" value="' . esc_attr( $maaa_valsarray[2] ) . '"><br>
-        Price:<br><input type="text" name="val_price" value="' . esc_attr( $maaa_valsarray[3] ) . '"><br>
-        Detail:<br><input type="text" name="val_detail" value="' . esc_attr( $maaa_valsarray[4] ) . '"><br>
-        <input type="submit" value="Submit" name="submit_tupdate"> &nbsp; &nbsp; &nbsp;
-        <input type="submit" value="Delete" name="delete_tupdate" ' . esc_attr( $maaa_delete ) . '></form>';
-      $maaa_dfields = array("id", "type", "descrip", "price", "detail");
-      $maaa_tfields = "type, descrip, price, detail";
-      $maaa_tftypes = "%s, %s, %f, %s";
+      $form = new Budget($table, $values, $count);
       break;
     case "categories":
-      $maaa_dataform_safe = '<form method="post" action="" name="f_categories">' . wp_nonce_field('maaa_categories_nonce') . '
-        <input type="hidden" name="val_tchoice" value="' . esc_attr( $maaa_tablechoice ) . '">
-        <input type="hidden" name="val_idedit" value="' . esc_attr( $maaa_valsarray[0] ) . '">
-        Category:<br><input type="text" name="val_cat" value="' . esc_attr( $maaa_valsarray[1] ) . '"><br>
-        <input type="submit" value="Submit" name="submit_tupdate"> &nbsp; &nbsp; &nbsp;
-        <input type="submit" value="Delete" name="delete_tupdate" ' . esc_attr( $maaa_delete ) . '>
-        </form>';
-      $maaa_dfields = array("id", "category");
-      $maaa_tfields = "category";
-      $maaa_tftypes = "%s";
+      $form = new Category($table, $values, $count);
       break;
     case "countries":
-      $maaa_dataform_safe = '<form method="post" action="" name="f_countries">' . wp_nonce_field('maaa_countries_nonce') . '
-        <input type="hidden" name="val_tchoice" value="' . esc_attr( $maaa_tablechoice ) . '">
-        <input type="hidden" name="val_idedit" value="' . esc_attr( $maaa_valsarray[0] ) . '">
-        Country:<br><input type="text" name="val_country" value="' . esc_attr( $maaa_valsarray[1] ) . '"><br>
-        Visa Entry Fee:<br><input type="text" name="val_visaentry" value="' . esc_attr( $maaa_valsarray[2] ) . '"><br>
-        Visa Exit Fee:<br><input type="text" name="val_visaexit" value="' . esc_attr( $maaa_valsarray[3] ) . '"><br>
-        Visa Notes:<br><input type="text" name="val_visanotes" value="' . esc_attr( $maaa_valsarray[4] ) . '"><br>
-        Visit Order:<br><input type="text" name="val_visitorder" value="' . esc_attr( $maaa_valsarray[5] ) . '"><br>
-        Approximate Duration:<br><input type="text" name="val_duration" value="' . esc_attr( $maaa_valsarray[6] ) . '"><br>
-        USD$1 Equals:<br><input type="text" name="val_currconvert" value="' . esc_attr( $maaa_valsarray[7] ) . '"><br>
-        Foreign Amount Spent:<br><input type="text" name="val_currforeign" value="' . esc_attr( $maaa_valsarray[8] ) . '"><br>
-        Map URL:<br>' .  esc_url( $maaa_valsarray[9] ) .'<br>Use PHP MyAdmin to update the Map URL.<br>
-        <input type="submit" value="Submit" name="submit_tupdate"> &nbsp; &nbsp; &nbsp;
-        <input type="submit" value="Delete" name="delete_tupdate" ' . esc_attr( $maaa_delete ) . '>
-        </form>';
-      $maaa_dfields = array("id", "country", "visa_entry", "visa_exit", "visit_order", "approx_duration", "map_url");
-      $maaa_tfields = "country, visa_entry, visa_exit, visa_notes, visit_order, approx_duration, curr_convert, curr_foreign";
-      $maaa_tftypes = "%s, %f, %f, %s, %d, %d, %f, %f";
+      $form = new Country($table, $values, $count);
       break;
     case "days":
-      // $maaa_countrystr = maaa_make_dropdown_safe("countries", "country", $maaa_valsarray[1]);
-      $maaa_dataform_safe = '<form method="post" action="" name="f_days">' . wp_nonce_field('maaa_days_nonce') . '
-        <input type="hidden" name="val_tchoice" value="' . esc_attr( $maaa_tablechoice ) . '">
-        <input type="hidden" name="val_idedit" value="' . esc_attr( $maaa_valsarray[0] ) . '">
-        Country:<br><select name="val_country">' . maaa_make_dropdown_safe("countries", "country", $maaa_valsarray[1]) . '</select><br>
-        Entry Timestamp:<br><small>yyyy-mm-dd hh:mm:ss</small><br><input type="text" name="val_entry" value="' . esc_attr( $maaa_valsarray[2] ) . '"><br>
-        Exit Timestamp:<br><small>yyyy-mm-dd hh:mm:ss</small><br><input type="text" name="val_exit" value="' . esc_attr( $maaa_valsarray[3] ) . '"><br>
-        <input type="submit" value="Submit" name="submit_tupdate"> &nbsp; &nbsp; &nbsp;
-        <input type="submit" value="Delete" name="delete_tupdate" ' . esc_attr( $maaa_delete ) . '>
-        </form>';
-      $maaa_dfields = array("id", "country", "entry_ts", "exit_ts", "days");
-      $maaa_tfields = "country, entry_ts, exit_ts, days";
-      $maaa_tftypes = "%s, %s, %s, %f";
+      $form = new Day($table, $values, $count);
       break;
     case "expenses":
-      // $maaa_countrystr = maaa_make_dropdown_safe("countries", "country", $maaa_valsarray[2]);
-      // $maaa_categorystr = maaa_make_dropdown_safe("categories", "category", $maaa_valsarray[3]);
-      $maaa_dataform_safe = '<form method="post" action="" name="f_expenses">' . wp_nonce_field('maaa_expenses_nonce') . '
-        <input type="hidden" name="val_tchoice" value="' . esc_attr( $maaa_tablechoice ) . '">
-        <input type="hidden" name="val_idedit" value="' . esc_attr( $maaa_valsarray[0] ) . '">
-        Date:<br><small>yyyy-mm-dd</small><br><input type="text" name="val_date" value="' . esc_attr( $maaa_valsarray[1] ) . '"><br>
-        Country:<br><select name="val_country">' . maaa_make_dropdown_safe("countries", "country", $maaa_valsarray[2]) . '</select><br>
-        Category:<br><select name="val_category">' . maaa_make_dropdown_safe("categories", "category", $maaa_valsarray[3]) . '</select><br>
-        Detail:<br><input type="text" name="val_detail" value="' . esc_attr( $maaa_valsarray[4] ) . '"><br>
-        Price:<br><input type="text" name="val_price" value="' . esc_attr( $maaa_valsarray[5] ) . '"><br>
-        Num of Units:<br><input type="text" name="val_units" value="' . esc_attr( $maaa_valsarray[6] ) . '"><br>
-        <input type="submit" value="Submit" name="submit_tupdate"> &nbsp; &nbsp; &nbsp;
-        <input type="submit" value="Delete" name="delete_tupdate" ' . esc_attr( $maaa_delete ) . '>
-        </form>';
-      $maaa_dfields = array("id", "spenddate", "country", "category", "detail", "price");
-      $maaa_tfields = "spenddate, country, category, detail, price, units, ppu";
-      $maaa_tftypes = "%s, %s, %s, %s, %f, %f, %f";
+      $form = new Expense($table, $values, $count);
       break;
     default:
-      echo 'There was an error in "switch ($maaa_tablechoice)"'; //error message
-  } //end switch
+      echo 'There was an error in "maaa_make_dataform_safe()"'; //error message
+  }
 
-  return array($maaa_dataform_safe, $maaa_dfields, $maaa_tfields, $maaa_tftypes);
-} //end function
+  return array($form->content, $form->dfields, $form->tfields, $form->tftypes);
+}
 
 
 //Make data table
@@ -573,7 +851,7 @@ function maaa_sidebar_widget_init() {
     } else {
       $maaa_cchoice = "All Countries";
     }
-    $maaa_countrystr = maaa_make_dropdown_safe("countries", "country", $maaa_cchoice);
+    $maaa_countrystr = make_options("countries", "country", $maaa_cchoice);
 
     //Retrieve category sums
     $maaa_category = $wpdb->get_col( "SELECT category FROM " . $wpdb->prefix . "maaa_categories ORDER BY category ASC" );
@@ -692,10 +970,10 @@ function maaa_sidebar_widget_init() {
             </tr>
             <tr>
               <td width="40%">All Categories</td>
-              <td width="15%" style="text-align:right">$<?php echo esc_html( maaa_calc_stat_vals( $maaa_cattotal, 1 )[0] ); ?></td>
-              <td width="15%" style="text-align:left">.<?php echo esc_html( maaa_calc_stat_vals( $maaa_cattotal, 1 )[1] ); ?></td>
-              <td width="15%" style="text-align:right">$<?php echo esc_html( maaa_calc_stat_vals( $maaa_cattotal, $maaa_daysum )[0] ); ?></td>
-              <td width="15%" style="text-align:left">.<?php echo esc_html( maaa_calc_stat_vals( $maaa_cattotal, $maaa_daysum )[1] ); ?></td>
+              <td width="15%" style="text-align:right">$<?php echo esc_html( get_left_right_values( $maaa_cattotal, 1 )[0] ); ?></td>
+              <td width="15%" style="text-align:left">.<?php echo esc_html( get_left_right_values( $maaa_cattotal, 1 )[1] ); ?></td>
+              <td width="15%" style="text-align:right">$<?php echo esc_html( get_left_right_values( $maaa_cattotal, $maaa_daysum )[0] ); ?></td>
+              <td width="15%" style="text-align:left">.<?php echo esc_html( get_left_right_values( $maaa_cattotal, $maaa_daysum )[1] ); ?></td>
             </tr>
             <?php
             foreach ($maaa_catfins as $maaa_catfin) {
@@ -705,10 +983,10 @@ function maaa_sidebar_widget_init() {
               if ($maaa_catfin_c != "") { ?>
                 <tr>
                   <td width="40%"><?php echo esc_html( $maaa_catfin_c ); ?></td>
-                  <td width="15%" style="text-align:right">$<?php echo esc_html( maaa_calc_stat_vals( $maaa_catfin_f, 1 )[0] ); ?></td>
-                  <td width="15%" style="text-align:left">.<?php echo esc_html( maaa_calc_stat_vals( $maaa_catfin_f, 1 )[1] ); ?></td>
-                  <td width="15%" style="text-align:right">$<?php echo esc_html( maaa_calc_stat_vals( $maaa_catfin_f, $maaa_daysum )[0] ); ?></td>
-                  <td width="15%" style="text-align:left">.<?php echo esc_html( maaa_calc_stat_vals( $maaa_catfin_f, $maaa_daysum )[1] ); ?></td>
+                  <td width="15%" style="text-align:right">$<?php echo esc_html( get_left_right_values( $maaa_catfin_f, 1 )[0] ); ?></td>
+                  <td width="15%" style="text-align:left">.<?php echo esc_html( get_left_right_values( $maaa_catfin_f, 1 )[1] ); ?></td>
+                  <td width="15%" style="text-align:right">$<?php echo esc_html( get_left_right_values( $maaa_catfin_f, $maaa_daysum )[0] ); ?></td>
+                  <td width="15%" style="text-align:left">.<?php echo esc_html( get_left_right_values( $maaa_catfin_f, $maaa_daysum )[1] ); ?></td>
                 </tr>
               <?php } //end if
             } //end foreach
@@ -731,121 +1009,5 @@ function maaa_sidebar_widget_init() {
 
 // Hook into the 'plugins_loaded' action
 add_action('plugins_loaded', 'maaa_sidebar_widget_init');
-
-
-////////////////////////////////OLD INSTALL
-//MySQL syntax updated through manual table creation 28-Jul-2013 (countries through expenses)
-/*
-  global $wpdb;
-  global $log_db_version;
-
-  //Accom/Trans
-  CREATE TABLE  `wp_maaa_accomtrans` (
- `id` MEDIUMINT( 9 ) NOT NULL AUTO_INCREMENT PRIMARY KEY ,
- `country1` VARCHAR( 30 ) CHARACTER SET latin1 COLLATE latin1_general_cs NOT NULL ,
- `country2` VARCHAR( 30 ) CHARACTER SET latin1 COLLATE latin1_general_cs NOT NULL ,
- `start_in` DATETIME NOT NULL ,
- `end_out` DATETIME NOT NULL ,
- `co_name` VARCHAR( 100 ) CHARACTER SET latin1 COLLATE latin1_general_cs NOT NULL ,
- `co_address` VARCHAR( 5000 ) CHARACTER SET latin1 COLLATE latin1_general_cs NOT NULL ,
- `co_phone` VARCHAR( 15 ) CHARACTER SET latin1 COLLATE latin1_general_cs NOT NULL ,
- `co_contact` VARCHAR( 200 ) CHARACTER SET latin1 COLLATE latin1_general_cs NOT NULL ,
- `notes` VARCHAR( 10000 ) CHARACTER SET latin1 COLLATE latin1_general_cs NOT NULL ,
- `conf_code` VARCHAR( 100 ) CHARACTER SET latin1 COLLATE latin1_general_cs NOT NULL ,
- `conf_date` DATE NOT NULL ,
- `conf_cancelled` DATE NOT NULL ,
-FULLTEXT (
-`country1` ,
-`country2` ,
-`co_name` ,
-`co_address` ,
-`co_contact` ,
-`notes` ,
-`conf_code`
-)
-) ENGINE = MYISAM CHARACTER SET latin1 COLLATE latin1_general_cs;
-
-  //Budget
-  $maaa_table = $wpdb->prefix . "maaa_budget";
-  if($wpdb->get_var("show tables like '$maaa_table'") != $maaa_table) {
-    $sql = "CREATE TABLE " . $maaa_table . " (
-      id mediumint(9) NOT NULL AUTO_INCREMENT,
-      descrip varchar(30) NOT NULL,
-      price decimal(7,2) NOT NULL,
-      detail tinytext() NOT NULL,
-      PRIMARY KEY id (id),
-      UNIQUE KEY descrip (descrip)
-    );";
-    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-         dbDelta($sql);
-    add_option("log_db_version", $log_db_version);
-  }
-
-  //Categories
-  $maaa_table = $wpdb->prefix . "maaa_categories";
-  if($wpdb->get_var("show tables like '$maaa_table'") != $maaa_table) {
-    $sql = "CREATE TABLE " . $maaa_table . " (
-      id mediumint(9) NOT NULL AUTO_INCREMENT,
-      category varchar(30) NOT NULL,
-      PRIMARY KEY id (id),
-      UNIQUE KEY category (category)
-    );";
-    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-         dbDelta($sql);
-    add_option("log_db_version", $log_db_version);
-  }
-
-    //Countries
-  CREATE TABLE wp_maaa_countries(
-
-id MEDIUMINT( 9 ) NOT NULL AUTO_INCREMENT ,
-country VARCHAR( 30 ) CHARACTER SET latin1 COLLATE latin1_general_cs NOT NULL ,
-visa_entry DECIMAL( 6, 2 ) DEFAULT 0,
-visa_exit DECIMAL( 6, 2 ) DEFAULT 0,
-visa_notes TEXT CHARACTER SET latin1 COLLATE latin1_general_cs,
-visit_order SMALLINT( 2 ) DEFAULT 0,
-approx_duration SMALLINT( 2 ) DEFAULT  0,
-curr_convert DECIMAL( 8, 5 ) DEFAULT  0,
-curr_foreign DECIMAL( 7, 2 ) DEFAULT  0,
-map_url TEXT( 255 ) CHARACTER SET latin1 COLLATE latin1_general_cs,
-PRIMARY KEY id( id ) ,
-UNIQUE KEY country( country )
-);
-
-  //Days
-  $maaa_table = $wpdb->prefix . "maaa_days";
-  if ($wpdb->get_var("show tables like '$maaa_table'") != $maaa_table) {
-    $maaa_tcreate_sql = "CREATE TABLE wp_maaa_days (
-      id mediumint(9) NOT NULL AUTO_INCREMENT,
-      country varchar(30) CHARACTER SET latin1 COLLATE latin1_general_cs NOT NULL,
-      entry_ts datetime NOT NULL,
-      exit_ts datetime NOT NULL,
-      days decimal(7,3) NOT NULL,
-        PRIMARY KEY  id (id)
-    );";
-    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-         dbDelta( $maaa_tcreate_sql );
-    add_option("log_db_version", $log_db_version);
-  //}
-
-  //Expenses
-  $maaa_table = $wpdb->prefix . "maaa_expenses";
-  if($wpdb->get_var("show tables like '$maaa_table'") != $maaa_table) {
-    $sql = "CREATE TABLE " . $maaa_table . " (
-      id mediumint(9) NOT NULL AUTO_INCREMENT,
-      spenddate date NOT NULL,
-        country varchar(30) CHARACTER SET latin1 COLLATE latin1_general_cs NOT NULL,
-      category varchar(30) CHARACTER SET latin1 COLLATE latin1_general_cs NOT NULL,
-      detail text(255) CHARACTER SET latin1 COLLATE latin1_general_cs NOT NULL,
-        price decimal(7,2) NOT NULL,
-        units decimal(7,3) NOT NULL,
-        ppu decimal(7,3) NOT NULL,
-        PRIMARY KEY id (id)
-    );";
-    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-         dbDelta($sql);
-    add_option("log_db_version", $log_db_version);
-  }
-*/
 
 ?>
