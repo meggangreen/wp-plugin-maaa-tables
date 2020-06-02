@@ -5,11 +5,12 @@
 * Plugin URI:   http://meggangreen.com
 * Description:  update maaa tables
 * Version:      2.0.0
-* Updated:      2018-01-22
+* Updated:      2020-05-31
 * Author:       Meggan Green
 * Author URI:   http://meggangreen.com
 * License:      GNU GPL2
 */
+
 
 /**
  * Returns the left-of- and right-of-decimal values.
@@ -466,95 +467,229 @@ function maaa_make_dataform_safe($table, $values, $count) {
       $form = new Expense($table, $values, $count);
       break;
     default:
-      echo 'There was an error in "maaa_make_dataform_safe()"'; //error message
+      echo 'There was an error in "maaa_make_dataform_safe()"';
   }
 
   return array($form->content, $form->dfields, $form->tfields, $form->tftypes);
 }
 
 
-//Make data table
-function maaa_make_output_table_safe($maaa_tablechoice, $maaa_tablefields) {
+/**
+ * Makes the SQL query for the Dashboard widget's table.
+ * 
+ * @since 0.0.0
+ * @since 2.0.0 Broken out as separate function
+ * 
+ * @param string $table Selected table name
+ * @param array $fields Array of selected column names  # TODO can get all cols and not print some instead?
+ * @return string
+ */
+function make_query($table, $fields) {
   global $wpdb;
-  $maaa_tablepath = $wpdb->prefix . "maaa_" . $maaa_tablechoice;
-  $i = count($maaa_tablefields) - 1;
-  $maaa_tpct = floor(98 / $i);
+  $db_table = $wpdb->prefix . "maaa_" . $table;
 
-  switch ($maaa_tablechoice) {
-    case "none":
-      break;
+  $select = "SELECT " . implode(", ", $fields);
+  $from = " FROM $db_table";
+  $where = "";
+  $orderby = " ORDER BY id DESC";
+  $limit = "";
+  
+  switch ($table) {
     case "accomtrans":
-      $maaa_tablesql = "SELECT " . implode(", ",$maaa_tablefields) . " FROM $maaa_tablepath WHERE conf_cancelled = '0000-00-00 00:00:00' ORDER BY start_in ASC";
-      $maaa_tabletitle = 'All active submissions to the ' . ucfirst($maaa_tablechoice) . ' table:';
-      break;
-    case "budget":
-      $maaa_tablesql = "SELECT " . implode(", ",$maaa_tablefields) . " FROM $maaa_tablepath ORDER BY id DESC";
-      $maaa_tabletitle = 'All submissions to the ' . ucfirst($maaa_tablechoice) . ' table:';
+      $where = " WHERE conf_cancelled = '0000-00-00 00:00:00'";
+      $orderby = " ORDER BY start_in ASC";
       break;
     case "countries":
-      $maaa_tablesql = "SELECT " . implode(", ",$maaa_tablefields) . " FROM $maaa_tablepath ORDER BY country ASC";
-      $maaa_tabletitle = 'All submissions to the ' . ucfirst($maaa_tablechoice) . ' table:';
+      $orderby = " ORDER BY country ASC";
       break;
     case "categories":
-      $maaa_tablesql = "SELECT " . implode(", ",$maaa_tablefields) . " FROM $maaa_tablepath ORDER BY category ASC";
-      $maaa_tabletitle = 'All submissions to the ' . ucfirst($maaa_tablechoice) . ' table:';
+      $orderby = " ORDER BY category ASC";
+      break;
+    case "days" || "expenses":
+      $limit = " LIMIT 0 , 60";
       break;
     default:
-      $maaa_tablesql = "SELECT " . implode(", ",$maaa_tablefields) . " FROM $maaa_tablepath ORDER BY id DESC LIMIT 0 , 60";
-      $maaa_tabletitle = 'Sixty most recent submissions to the ' . ucfirst($maaa_tablechoice) . ' table:';
-  } //end switch
+      $select = "";
+      $from = "";
+      $where = "";
+      $orderby = "";
+      $limit = "";
+  }
 
-  $maaa_tabledata = $wpdb->get_results( $maaa_tablesql );
-  if ($maaa_tabledata) {
-    foreach ($maaa_tabledata as $maaa_tabledata_row) {
-      foreach ($maaa_tabledata_row as $maaa_tabledata_field) {
-        if ($maaa_tabledata_str_safe) {
-          $maaa_tabledata_str_safe = $maaa_tabledata_str_safe .
-                                     '<td style="vertical-align:top; width="' .
-                                     esc_attr( $maaa_tpct ) .
-                                     '%"><center>' .
-                                     esc_html( $maaa_tabledata_field ) .
-                                     '</center></td>';
-        } else {
-          $maaa_tabledata_str_safe = '<td style="vertical-align:top; width="2%"><center><input type="submit" name="id_' .
-                                     esc_attr( $maaa_tabledata_field ) .
-                                     '" value="' .
-                                     esc_attr( $maaa_tabledata_field ) .
-                                     '"></center></td>';
-        } //end if
-      } //end foreach
-      $maaa_tablerow_str_safe = $maaa_tablerow_str_safe .
-                                '<tr style="border-bottom:1px dotted #999;">' .
-                                $maaa_tabledata_str_safe .
-                                '</tr>';
-      unset($maaa_tabledata_str_safe);
-    } //end foreach
-    foreach ($maaa_tablefields as $maaa_tablehead) {
-      if ($maaa_tablehead_str_safe) {
-        $maaa_tablehead_str_safe = $maaa_tablehead_str_safe .
-                                   '<th width="' .
-                                   esc_attr( $maaa_tpct ) .
-                                   '%">' .
-                                   esc_html( strtoupper($maaa_tablehead) ) .
-                                   '</th>';
-      } else {
-        $maaa_tablehead_str_safe = $maaa_tablehead_str_safe .
-                                   '<th width="2%">' .
-                                   esc_html( strtoupper($maaa_tablehead) ) .
-                                   '</th>';
-      } //endif
-    } //end foreach
+  return $select . $from . $where . $orderby . $limit;
+}
 
-    return '<hr><center><b>' . esc_html( $maaa_tabletitle ) . '</b></center>
-      <table width="100%" style="border-collapse:collapse;">
-        <form method="post" action="" name="ids">' . wp_nonce_field('maaa_editid_nonce') . '<input type="hidden" name="val_edittable" value="' . esc_attr( $maaa_tablechoice ) . '">
-        <tr>' . $maaa_tablehead_str_safe . '</tr>
-        ' . $maaa_tablerow_str_safe . '
-        </form>
-      </table>';
-  } //end if
 
-} //end function
+/**
+ * Gets DB rows.
+ * 
+ * @since 0.0.0
+ * @since 2.0.0 Broken out and refactored
+ * 
+ * @param string $table Table name
+ * @param array $fields Array of selected column names  # TODO can get all cols and not print some instead?
+ * @return array Array of row objects
+ */
+function get_data($table, $fields) {
+  global $wpdb;
+  
+  if ( $table == "none" ) {
+    return NULL;
+  }
+  
+  $query = make_query($table, $fields);
+  
+  return $wpdb->get_results($query);
+}
+
+
+/**
+ * Makes the HTML header for the Dashboard widget's table.
+ * 
+ * @since 0.0.0
+ * @since 2.0.0 Moved into separate function during refactor
+ * 
+ * @param string $table Table name
+ * @return string 
+ */
+function make_html_header($table) {
+  $table = ucfirst($table);
+  
+  switch ($table) {
+    case "Accomtrans":
+      $header = "All active submissions to the $table table:";
+      break;
+    case "Days" || "Expenses":
+      $header = "Sixty most recent submissions to the $table table:";
+      break;
+    default:
+      $header = "All submissions to the $table table:";
+  }
+
+  return '<hr><center><b>' . esc_html($header) . '</b></center>';
+}
+
+
+/**
+ * Makes the HTML header row for the Dashboard widget's table.
+ * 
+ * @since 0.0.0
+ * @since 2.0.0 Moved to separate function
+ * 
+ * @param array $cols Array of selected column names
+ * @param integer $width Percentage of table for all but first cell in row
+ * @return string
+ */
+function make_html_row_heads($cols, $width) {
+  $width = esc_attr($width);
+  
+  $pre = '<tr>';
+  $post = '</tr>';
+
+  $cols[0] = '<th width="2%">' . esc_html(strtoupper($cols[0])) . '</th>';
+  for ($i=1; $i < count($cols); $i++) { 
+    $cols[$i] = '<th width="' . $width . '%">' 
+               . esc_html(strtoupper($cols[$i])) .
+               '</th>';
+  }
+
+  return $pre . implode($cols) . $post;
+}
+
+
+/**
+ * Makes one HTML row for the Dashboard widget's table.
+ * 
+ * @since 0.0.0
+ * @since 2.0.0 Moved into separate function
+ * 
+ * @param array $fields An array of DB row object properties (ie column names)
+ * @param array $row A DB row object
+ * @param integer $width Percentage of table for all but first cell in row
+ * @return string
+ */
+function make_one_html_row($fields, $row, $width) {
+  $width = esc_attr($width);
+  
+  $pre = '<tr>';
+  $post = '</tr>';
+
+  $cells = array();
+
+  $row->id = esc_attr($row->id);
+  $html = '<td style="vertical-align:top; width="2%"><center>' .
+          '<input type="submit" 
+                  name="id_' . $row->id . '" 
+                  value="' . $row->id . '">' .
+          '</center></td>';
+  array_push($cells, $html);
+
+  for ($i=1; $i < count($fields); $i++) {
+    $f = $fields[$i];
+    $html = '<td style="vertical-align:top; width="' . $width . '%"><center>'
+            . esc_html($row->$f) .
+            '</center></td>';
+    array_push($cells, $html);
+  }
+
+  return $pre . implode($cells) . $post;
+}
+
+
+/**
+ * Makes the HTML rows for the Dashboard widget's table.
+ * 
+ * @since 0.0.0
+ * @since 2.0.0 Moved into separate function
+ * 
+ * @param array $fields Array of column names
+ * @param array $rows Table row objects from SQL query
+ * @param integer $width Percentage of table for all but first cell in row
+ * @return string
+ */ 
+function make_html_rows($fields, $rows, $width) {
+  for ($i=0; $i < count($rows); $i++) { 
+    $rows[$i] = make_one_html_row($fields, $rows[$i], $width);
+  }  
+
+  return implode($rows);
+}
+
+
+/**
+ * Makes the Dashboard widget's table.
+ * 
+ * Driver function to make the HTML table in the Dashboard widget.
+ * 
+ * @since 0.0.0
+ * @since 2.0.0 Underwent significant refactor
+ * 
+ * @param string $table Table name
+ * @param array $fields Array of selected column names  # TODO can get all cols and not print some instead?
+ * @return string
+ */
+function maaa_make_output_table_safe($table, $fields) {
+  $width = floor(98 / (count($fields) - 1));  // width of the table cells
+  
+  $rows = get_data($table, $fields);
+
+  $html_header = make_html_header($table);
+  $html_row_heads = make_html_row_heads($fields, $width);
+  $html_rows = make_html_rows($fields, $rows, $width);
+  
+  $table = esc_attr($table);
+
+  return $html_header .
+         '<table width="100%" style="border-collapse:collapse;">
+           <form method="post" action="" name="ids">'
+           . wp_nonce_field('maaa_editid_nonce') . 
+           '<input type="hidden" name="val_edittable" value="' . $table . '">'
+           . $html_row_heads
+           . $html_rows .
+           '</form>
+         </table>';
+}
+
 
 //////////////////////////////////////////////////////INSTALL
 //Create the tables in the WP database // this s*** dont work -- moved to bottom for ease of reading
