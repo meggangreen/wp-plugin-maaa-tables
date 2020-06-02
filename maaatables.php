@@ -692,14 +692,21 @@ function maaa_make_output_table_safe($table, $fields) {
 
 
 //////////////////////////////////////////////////////INSTALL
-//Create the tables in the WP database // this s*** dont work -- moved to bottom for ease of reading
+/**
+ * Installs plugin, including creating DB tables.
+ * 
+ * I wasn't able to make this work seven years ago, when I started. It will be 
+ * the last bit to be updated, if at all.
+ */
 global $log_db_version;
 $log_db_version = "0.1";
 function maaa_tables_install () {
 
 }
 
-//Registration hook to create the tables when the plugin is activated
+/** 
+ * Registration hook to create the tables when the plugin is activated.
+ */
 register_activation_hook(__FILE__, 'maaa_tables_install');
 
 //////////////////////////////////////////////////////ADMIN
