@@ -131,11 +131,10 @@ abstract class EntryForm {
    * @return array
    */
   protected function _clean_values($values) {
-    if ( $values == "none" ) {  // Starting with a blank form
-      unset($values);
-      return array_map(function($v) {return "";}, range(0, $this->count));
-    } else {
+    if ($values) {  // Starting with a blank form
       return array_map(function($v) {return esc_attr($v);}, $values);
+    } else {
+      return array_map(function($v) {return "";}, range(0, $this->count));
     }
   }
   
@@ -436,7 +435,7 @@ class Expense extends EntryForm {
  * @since 2.0.0 Cleaned up as part of major refactor
  * 
  * @param string $table Table name
- * @param mutable string OR array $values Array of values or "none"  #TODO change to array only
+ * @param array Array of values; can be empty
  * 
  * @return array {  #TODO make return object instead
  *     @type string $form->content HTML form
@@ -552,7 +551,7 @@ function get_data($table, $fields) {
  * @param string $table Table name
  * @return string 
  */
-function make_html_header($table) {
+function make_html_header($table) {  // # TODO troubleshoot switch statement
   $table = ucfirst($table);
   
   switch ($table) {
@@ -710,45 +709,17 @@ function maaa_tables_install () {
 register_activation_hook(__FILE__, 'maaa_tables_install');
 
 //////////////////////////////////////////////////////ADMIN
-// Create the function to output the contents of the admin dashboard widget
-function maaa_display_forms_widget() {
-  global $wpdb;
-  $wpdb->show_errors();
 
-  //Define input forms -- General
-  if (isset($_POST['submit_tchoice'])) {
-    $maaa_tchoice = $_POST['tablechoice'];
-  } else if (isset($_POST['val_edittable'])) {
-    $maaa_tchoice = $_POST['val_edittable'];
-  } else if (isset($_POST['submit_tupdate']) || isset($_POST['delete_tupdate'])) {
-    $maaa_tchoice = $_POST['val_tchoice'];
-  } // end if
-
-  //Choose table info to display
-  switch ($maaa_tchoice) {
-    case "none":
-      $maaa_output_data_safe = array('Please select a table from the list.');
-      break;
-    case "accomtrans":
-      $maaa_output_data_safe = maaa_make_dataform_safe($maaa_tchoice, "none", 13);
-      break;
-    case "budget":
-      $maaa_output_data_safe = maaa_make_dataform_safe($maaa_tchoice, "none", 5);
-      break;
-    case "categories":
-      $maaa_output_data_safe = maaa_make_dataform_safe($maaa_tchoice, "none", 2);
-      break;
-    case "countries":
-      $maaa_output_data_safe = maaa_make_dataform_safe($maaa_tchoice, "none", 10);
-      break;
-    case "days":
-      $maaa_output_data_safe = maaa_make_dataform_safe($maaa_tchoice, "none", 5);
-      break;
-    case "expenses":
-      $maaa_output_data_safe = maaa_make_dataform_safe($maaa_tchoice, "none", 8);
-      break;
-  } //end switch
-
+/**
+ * Makes table selection dropdown for Dashboard widget.
+ * 
+ * @since 0.0.0
+ * @since 2.0.0 Moved into separate function
+ * 
+ * @param string $table Table choice; can be NULL
+ * @return 
+ */
+function make_tables_dropdown($table) {
   //Display table selection form
   $maaa_tableoptions = array(
     "none",
@@ -781,9 +752,60 @@ function maaa_display_forms_widget() {
     } //end if
   } //end for
 
-  //Load subforms to update table
-  $maaa_admin_table_title_safe = esc_html( ucfirst($maaa_tchoice) );
-  $maaa_admin_table_qresult_safe = '';
+  return $maaa_toptionstr_safe;
+}
+
+
+/**
+ * Outputs the Dashboard widget.
+ * 
+ * @since 0.0.0
+ * @since 2.0.0
+ */
+// Create the function to output the contents of the admin dashboard widget
+function maaa_display_forms_widget() {
+  global $wpdb;
+  $wpdb->show_errors();
+
+  //Define input forms -- General
+  if (isset($_POST['submit_tchoice'])) {
+    $maaa_tchoice = $_POST['tablechoice'];
+  } else if (isset($_POST['val_edittable'])) {
+    $maaa_tchoice = $_POST['val_edittable'];
+  } else if (isset($_POST['submit_tupdate']) || isset($_POST['delete_tupdate'])) {
+    $maaa_tchoice = $_POST['val_tchoice'];
+  } // end if
+
+  //Choose table info to display
+  switch ($maaa_tchoice) {
+    case "none":
+      $maaa_output_data_safe = array('Please select a table from the list.');
+      break;
+    case "accomtrans":
+      $maaa_output_data_safe = maaa_make_dataform_safe($maaa_tchoice, array(), 13);
+      break;
+    case "budget":
+      $maaa_output_data_safe = maaa_make_dataform_safe($maaa_tchoice, array(), 5);
+      break;
+    case "categories":
+      $maaa_output_data_safe = maaa_make_dataform_safe($maaa_tchoice, array(), 2);
+      break;
+    case "countries":
+      $maaa_output_data_safe = maaa_make_dataform_safe($maaa_tchoice, array(), 10);
+      break;
+    case "days":
+      $maaa_output_data_safe = maaa_make_dataform_safe($maaa_tchoice, array(), 5);
+      break;
+    case "expenses":
+      $maaa_output_data_safe = maaa_make_dataform_safe($maaa_tchoice, array(), 8);
+      break;
+  } //end switch
+
+  $maaa_toptionstr_safe = make_tables_dropdown($maaa_tchoice);
+
+  // Load subforms to update table
+  $maaa_admin_table_title_safe = esc_html(ucfirst($maaa_tchoice));
+  $maaa_admin_table_qresult_safe = "";
 
   if (isset($_POST['submit_tchoice'])) { //Table choice is submitted
     check_admin_referer('maaa_choosetable_nonce'); //check nonces
